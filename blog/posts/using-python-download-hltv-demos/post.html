@@ -1,0 +1,187 @@
+<div class="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#writing-the-script">Writing the Script</a>
+
+<ul>
+<li><a href="#determining-how-hltv-serves-demos">Determining How HLTV Serves Demos</a></li>
+<li><a href="#getting-the-demo-ids">Getting the Demo IDs</a>
+
+<ul>
+<li><a href="#querying-the-url">Querying the URL</a></li>
+<li><a href="#saving-the-result">Saving the Result</a>
+
+<ul>
+<li><a href="#getting-the-demo-ids">Getting the Demo IDs</a></li>
+</ul></li>
+<li><a href="#pagination">Pagination</a></li>
+<li><a href="#making-a-method">Making a Method</a></li>
+</ul></li>
+<li><a href="#downloading-the-files">Downloading the Files</a>
+
+<ul>
+<li><a href="#saving-the-demos-files">Saving the Demos Files</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#code-tldr">Code (tl;dr)</a></li>
+</ul>
+</div>
+
+<h1 id="introduction">Introduction</h1>
+
+<p>Demo files are a requirement for analyzing players at the professional level of Counter-Strike: Global Offensive. Currently, using the HLTV Demos page for each event is a cumbersome and labor-intensive process. Leveraging Python, we can eliminate all manual interaction and streamline the process of acquiring these demo files.</p>
+
+<h1 id="writing-the-script">Writing the Script</h1>
+
+<p>Python is the obvious choice for a short script that will run with no dependancies. Writing the script in pure Python means that it will also be cross-platform between MacOS, Linux, and Windows. The downside of this is that it will not easily be multithreaded, however with a fast internet connection that becomes less important.</p>
+
+<h2 id="determining-how-hltv-serves-demos">Determining How HLTV Serves Demos</h2>
+
+<p>The HLTV <a href="http://www.hltv.org/?pageid=184">events archive</a> lists every event that HLTV has coverage for. Each event has a unique ID that is displayed in the URL: for example, <a href="http://www.hltv.org/?pageid=28&amp;eventid=2713">IEM Sydney</a> has a URL of <code>http://www.hltv.org/?pageid=28&amp;eventid=2713</code>. Theres are two arguments in this URL: <code>pageid=</code> and <code>eventid=</code>. <code>pageid</code> specifies what type of page to display while <code>eventid</code> specifies which event to query the data for. This means the event ID is the number after <code>&amp;eventid=</code>, in this case 2713. </p>
+
+<p>The matches that populate the resulting list are URLs that follow a similar pattern. For instance, the <a href="http://www.hltv.org/?pageid=28&amp;&amp;eventid=2713&amp;demoid=28247">FaZe vs. SK</a> match has a URL of <code>http://www.hltv.org/?pageid=28&amp;&amp;eventid=2713&amp;demoid=28247</code>. This has three arguments: the same <code>pageid</code> and <code>eventid</code> from before with an added <code>demoid</code> argument. This <code>demoid</code> is what actually serves the demo when you query the download: <code>hltv.org/interfaces/download.php?demoid=</code>.</p>
+
+<h2 id="getting-the-demo-ids">Getting the Demo IDs</h2>
+
+<p>In summary, the program must build a URL to query, parse the result it to find the relevant Demo IDs, and query the download URL.</p>
+
+<h3 id="querying-the-url">Querying the URL</h3>
+
+<p>The page with the demo files is <code>pageid=28</code> and that is constant across all events. Thus, we can query a list by simply telling a program to build a URL that starts with <code>http://www.hltv.org/?pageid=357&amp;eventid=</code> and <a href="https://en.wikipedia.org/wiki/Concatenation">concatenates</a> a given <code>eventid</code> to the end. </p>
+
+<pre><code>eventid = eventID
+offset = 0
+url = 'http://www.hltv.org/?pageid=28&amp;&amp;eventid=%s' % (eventid)
+</code></pre>
+
+<h3 id="saving-the-result">Saving the Result</h3>
+
+<p>To see what the server returns to that query, we build a URL Opener object and add in some dummy headers<sup><a href="#fn1-13310" id="fnr1-13310" title="see footnote" class="footnote">1</a></sup>. Lucky, this is quite simple to do using <code>urllib</code> and <code>urllib2</code>:</p>
+
+<pre><code>opener = urllib2.build_opener()
+opener.addheaders = [('User-Agent', 'Mozilla/5.0')]
+response = opener.open(url)
+html = response.read()
+</code></pre>
+
+<p>This opens the URL we created and then saves the resulting HTML to a String variable called html.</p>
+
+<h4 id="getting-the-demo-ids">Getting the Demo IDs</h4>
+
+<p>Regular expressions can be leveraged to determine which URLs hold the Demo IDs to download. Since the match URLs are all mostly the same, we can create an array called <code>demoIDs</code> like so:</p>
+
+<pre><code>demoIDs = re.findall('&quot;(.*?eventid=%s&amp;offset=%d&amp;amp;demoid=.*?)&quot;' % (eventid, offset), html)
+</code></pre>
+
+<p>This fills an array with all of the URLs that exist for our current event on the current page. To clean the array so that we only have the Demo IDs, simply remove the parts from each item in the array that are the same:</p>
+
+<pre><code>for i in range(0, len(demoIDs)):
+    demoIDs[i] = demoIDs[i].replace('&quot; href=&quot;?pageid=28&amp;amp;&amp;eventid=%s&amp;offset=%s&amp;amp;demoid=' % (eventid, offset), “”)
+</code></pre>
+
+<p>After that, the array <code>demoIDs</code> is now only filled with five-digit Demo IDs.</p>
+
+<h3 id="pagination">Pagination</h3>
+
+<p>HLTV throws a wrench in the simplicity of this, however. Demo pages are restricted to only showing twenty-five matches at a time, and many events have more than twenty-five matches. In order to handle this, HLTV adds another argument to the URL for paginated events: <code>offset</code>. This specifies a multiple of 25 to offset the list of matches by: for example, page one is <code>offset=0</code> while page two is <code>offset=25</code> and so forth. </p>
+
+<pre><code> eventid = eventID
+ offset = 0
+ url = 'http://www.hltv.org/?pageid=28&amp;&amp;eventid=%s&amp;offset=%s' % (eventid, offset)
+</code></pre>
+
+<p>To account for this, the script must test for when the list of demos is equal to twenty-five so it knows to check for a subsequent page. This can be accomplished by an <code>if</code> statement:</p>
+
+<pre><code>if len(demoIDs) == 25:
+        morePages = True
+        page = 1
+        while morePages:
+            offset += 25
+            url = 'http://www.hltv.org/?pageid=28&amp;&amp;eventid=%s&amp;offset=%s' % (eventid, offset)
+            opener = urllib2.build_opener()
+            opener.addheaders = [('User-Agent', 'Mozilla/5.0')]
+            response = opener.open(url)
+            html = response.read()
+            moreDemoIDs = re.findall('&quot;(.*?eventid=%s&amp;offset=%d&amp;amp;demoid=.*?)&quot;' % (eventid, offset), html)
+            for i in range(0, len(moreDemoIDs)):
+                moreDemoIDs[i] = moreDemoIDs[i].replace('&quot; href=&quot;?pageid=28&amp;amp;&amp;eventid=%s&amp;offset=%s&amp;amp;demoid=' % (eventid, offset), &quot;&quot;)
+                demoIDs.append(moreDemoIDs[i])
+            if len(moreDemoIDs) &lt; 25:
+                morePages = False
+                print &quot;Parsing final page. Found %s IDs&quot; % (len(demoIDs))
+            else:
+                page += 1
+                print &quot;Parsing next page: %s. %s IDs so far.&quot; % (page, len(demoIDs))
+</code></pre>
+
+<p>This only activates if the page we parse has exactly twenty-five demos. If it does, it builds the URL in the same way as before and then loops through until there are no more pages.</p>
+
+<pre><code>elif len(demoIDs) &lt; 25:
+    print &quot;Total demos: %s&quot; % len(demoIDs)
+elif len(demoIDs) &gt; 25:
+    print &quot;HLTV altered demo page layout”
+</code></pre>
+
+<p>These statements catch our edge cases. The first ends the script when the first page contains all of the demos and the second activates if more than twenty-five demos are found, which should currently be impossible.</p>
+
+<h3 id="making-a-method">Making a Method</h3>
+
+<p>All of this can be stored in a defined method. For example, using <code>def getIDs(eventID):</code> we can call <code>getIDs(2713)</code> and return the resultant array of IDs to download.</p>
+
+<h2 id="downloading-the-files">Downloading the Files</h2>
+
+<p>As outlined above, to serve a specific demo, HLTV queries <code>hltv.org/interfaces/download.php</code> with the argument <code>demoid</code>. Thus, to make the script download the demo file, we mist build that URL. Since we have an array of Demo IDs, this is simple to do with a for loop:</p>
+
+<pre><code>counter = 0
+for i in range(0, len(demoIDs)):
+    url = &quot;http://www.hltv.org/interfaces/download.php?demoid=%s&quot; % (demoIDs[I])`        
+</code></pre>
+
+<p>From here we us the same method as before to build an opener and open the URL:</p>
+
+<pre><code>opener = urllib2.build_opener()
+opener.addheaders = [('User-Agent', 'Mozilla/5.0')]
+response = opener.open(url)
+</code></pre>
+
+<p>However, HLTV again throws a wrench in the mix. The URL we query does not directly go to the file we need to download. Thus we must capture the real URL it redirects to by using <code>geturl()</code>:</p>
+
+<pre><code>finalurl = response.geturl()
+filename = finalurl.rsplit('/', 1)[-1]
+urllib.urlretrieve(finalurl, directory+&quot;/&quot;+filename)
+counter += 1
+print &quot;Downloaded %s demos&quot; % (counter)
+</code></pre>
+
+<p>Once we get the real URL that leads to the compressed demo file<sup><a href="#fn2-13310" id="fnr2-13310" title="see footnote" class="footnote">2</a></sup>, the program uses another regular expression to get the text after the last <code>/</code> in the URL. This is the filename, for example something like <code>ESLProLeague hellraisers vs penta bo3.rar</code>. </p>
+
+<p>The final URL is passed to the <code>urllib.urlretrieve()</code> method along with the filename. </p>
+
+<h3 id="saving-the-demos-files">Saving the Demos Files</h3>
+
+<p>Before the script can download the demos, it needs a place to put them. Prior to activating, the script uses <code>os</code> to creates a folder inside the directory of the script. It takes the user’s input and creates a folder of that name: for example, if the script is on the desktop and a user enters <code>IEM Sydney 2017</code>, the script will save all of the downloaded demos to the new <code>IEM Sydney 2017</code> folder.</p>
+
+<h1 id="code-tldr">Code (tl;dr)</h1>
+
+<p>The code is available with a GNU-GPL license in <a href="https://github.com/ReagentX/HLTVDemoDownloader">this repository</a> on my <a href="https://github.com/ReagentX">GitHub</a>. </p>
+
+<p>To run the code, download/unzip or clone the repository. From there, use your CLI of choice to cd to the directory and run <code>python Downloader.py</code>. The script will ask for an event ID, which is described above. It will then ask for the name of the event and then will download all of the relevant demo files.</p>
+
+<figure>
+<img src="terminal.png" alt="" />
+</figure>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-13310">
+<p>Like most web servers, a lack of proper headers will lead to a 403 error on HLTV <a href="#fnr1-13310" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-13310">
+<p>HLTV generally serves these as .rar or .zip files. <a href="#fnr2-13310" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>

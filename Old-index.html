@@ -1,0 +1,286 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Chris Sardegna - Welcome To Space</title>
+
+
+<script src='https://d2zh9g63fcvyrq.cloudfront.net/adn.js'></script>
+
+    <meta name="viewport" content="width=device-width; height=510; initial-scale=1.0; user-scalable=0;" /><meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <link rel="shortcut icon" href="https://chrissardegna.com/blog/img/favicon.ico" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link href="https://fonts.googleapis.com/css?family=Oswald:300,400,700" rel="stylesheet"
+        type="text/css" />
+    <link href="https://www.reagentx.net/space/res/style2.css" rel="stylesheet" type="text/css" />
+    <link type="text/css" rel="Stylesheet" href="assets/styles/bootstrap.css" />
+    <link type="text/css" rel="Stylesheet" href="assets/styles/bootstrap-responsive.css" />
+    <link type="text/css" rel="Stylesheet" href="assets/styles/shot.css" />
+    <link type="text/css" rel="Stylesheet" href="assets/styles/thickbox.css" />
+    <link type="text/css" rel="Stylesheet" href="assets/styles/jquery.minicolors.css" />
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+
+    <script type="text/javascript" src="assets/scripts/thickbox.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery.cycle.all.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery.maximage.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery.jscrollpane.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery-ui-1.9.2.custom.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery.validate.pack.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery.bxslider.min.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery.jplayer.js"></script>
+    <script type="text/javascript" src="assets/scripts/ttw-music-player.js"></script>
+    <script type="text/javascript" src="assets/scripts/myplaylist.js"></script>
+    <script type="text/javascript" src="assets/scripts/scrollTo.js"></script>
+    <script type="text/javascript" src="assets/scripts/jquery.minicolors.js"></script>
+    <script type="text/javascript" src="assets/scripts/custom.js"></script>
+    <!--[if lt IE 9]><script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+    <script type="text/javascript">
+    //<![CDATA[
+    
+    
+
+        function loading() {
+            document.getElementById("divLoading").style.visibility = "visible";
+            setTimeout('loadingVisible()', 1000);
+        }
+
+        function loadingVisible() {
+            document.getElementById("divLoading").style.visibility = "hidden";
+
+            $('div#player').ttwMusicPlayer(myPlaylist, {
+                autoPlay: false,
+                jPlayer: {
+                    swfPath: 'Jplayer'
+                }
+            });
+        }
+
+        $(document).ready(function () {
+
+            $('#slides').maximage({
+                cycleOptions: {
+                    fx: 'fade',
+                    speed: 3000,
+                    //timeout: 0,
+                    prev: 'a.prev',
+                    next: 'a.next',
+                    pause: 1,
+                    before: function (last, current) {
+                    },
+                    after: function (last, current) {
+                    }
+                },
+                onFirstImageLoaded: function () {
+                    jQuery('#slides').fadeIn('fast');
+                }
+            });
+
+            $('a.musicPlayer').click(function () {
+                if ($(this).hasClass('off')) {
+                    $(this).removeClass('off');
+                    $.jPlayer.play();
+                }
+                else {
+                    $(this).addClass('off');
+                    $.jPlayer.pause();
+                }
+            });
+        });
+
+        //]]>
+    </script>
+    
+    <script src="jquery-1.9.1.js" type="text/javascript"></script>
+<script type="text/javascript">
+  var interval = 0;
+
+  function updateActiveElement() {
+    if($(document.activeElement).attr('id') == "fb-iframe") {
+      clearInterval(interval);
+      bodyClicked = true;
+    }
+  }
+
+  $(function() {
+    interval = setInterval("updateActiveElement();", 50);
+  });
+
+</script>
+</head>
+
+<body onload="loading();" style="background: url('https://reagentx.net/space/res/stars4.png') no-repeat center center fixed;"  >
+	
+	<div style="overflow: hidden; width: 10px; height: 12px; position: absolute; filter:alpha(opacity=0); -moz-opacity:0.0; -khtml-opacity: 0.0; opacity: 0.0;" id="iframe-wrapper">
+<!--
+  <iframe src="http://www.facebook.com/plugins/like.php?href=http://www.facebook.com/RXLaboratories[/COLOR]&amp;layout=standard&amp;show_faces=false&amp;width=450&amp;action=like&amp;font=tahoma&amp;colorscheme=light&amp;height=80" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:50px; height:23px;" allowTransparency="true" id="fb-iframe" name="fb-iframe">
+  </iframe>
+-->
+</div>
+
+	<div class="shooting-stars"</div>
+	 <script type="text/javascript" src="https://www.reagentx.net/space/res/shootingstars.js"></script>
+    <script type="text/javascript">
+    (function($){
+      $( document ).ready( function(){
+        var shootingStarObj = new ShootingStar( ".shooting-stars" );
+            shootingStarObj.launch();
+        
+        $("input").keypress(function(event) {
+            if (event.which == 13) {
+                event.preventDefault();
+                $("form").submit();
+            }
+        });
+
+      });
+      })(jQuery);
+    </script>
+    <div class="twinkling" style="z-index: -1"></div>
+    
+
+
+    <a href="javascript:;" class="top hidden-tablet hidden-phone"></a>
+    <div id="player" style="display: none;">
+    </div>
+    <div id="divLoading" enableviewstate="false">
+        <div id="divLoad">
+            <img alt="loading" src="assets/images/loading.gif" />
+        </div>
+    </div>
+    <div id="loading">
+        <img src="assets/images/loading.gif" alt="loading" />
+    </div>
+
+    <a href="javascript:;" class="logo hidden-tablet hidden-phone" onclick="goHome();">
+        <img src="assets/images/logo.png" alt="Shot-Logo" />
+    </a>
+    <div class="footer hidden-tablet hidden-phone">
+        <ul class="socialLinks">
+           <!-- 
+ <li>
+                <div>
+                    <a class="fb text-color" href="javascript:;">Facebook</a></div>
+            </li>
+ -->
+            <li>
+                <div>
+                    <a class="tw text-color" href="https://twitter.com/rxcs">Twitter</a></div>
+            </li>
+            
+            <li>
+                <div>
+                    <a class="dr text-color" href="https://dribbble.com/css">Dribbble</a></div>
+            </li>
+
+            <li>
+                <div>
+                    <a class="fr text-color" href="https://500px.com/css">500px</a></div>
+            </li>
+
+           
+			<li>
+                <div>
+                    <a class="lk text-color" href="https://github.com/ReagentX">GitHub</a></div>
+            </li>
+
+        </ul>
+        <div class="copyText">
+            <span class="text-color">All rights reserved. Copyright © Chris Sardegna 2014</span>
+        </div>
+<!--         <a class="musicPlayer" href="javascript:;">MUSIC</a> -->
+    </div>
+    <div class="containerWrap" style="z-index: 1000" >
+        <div id="select" class="row-fluid visible-tablet visible-phone">
+            <div class="logoWrap span2" >
+                <a href="index.html" class="logo2" onclick="goHome();">
+                    <img src="assets/images/logo.png" alt="Shot-Logo" />
+                </a>
+            </div>
+            <div class="selectWrap span10" style="z-index: 1000">
+                <div class="row-fluid">
+                    <select class="mainMenu span12">
+                        <option value="index.html">HOME</option>
+
+                        <option value="https://reagentx.net">LABS</option>
+                        <option value="aboutMe.html">ABOUT ME</option>
+                        <option value="https://www.chrissardegna.com/blog">BLOG</option>
+                        <option value="https://500px.com/css">GALLERY</option>
+
+                        <option value="contact.html">CONTACT</option>
+
+                    </select>
+                </div>
+            </div>
+        </div>
+        <ul id="menu" class="mainMenu homePage hidden-tablet hidden-phone">
+            <li class="menuItem"><a class="text-color" href="index.html">HOME</a>
+
+            </li>
+            <li class="menuItem"><a class="text-color" href="">LABS</a>
+             <ul class="subMenu">
+                    <li><a class="text-color" href="https://www.reagentx.net">Home</a></li>
+                    <li><a class="text-color" href="https://reagentx.net/new/portfolio/">Portfolio</a></li>
+                    <li><a class="text-color" href="https://reagentx.net/new/blog/">Blog</a></li>
+                    <li><a class="text-color" href="https://reagentx.net/new/marketing/">Marketing</a></li>
+                    <li><a class="text-color" href="https://reagentx.net/new/contact/">Contact</a></li>
+                </ul></li>
+            <li class="menuItem"><a class="text-color" href="aboutMe.html">ABOUT ME</a></li>
+            <li class="menuItem"><a class="text-color" href="https://www.chrissardegna.com/blog">BLOG</a>
+            </li>
+                        <li class="menuItem"><a class="text-color" href="">GALLERY</a>
+            
+             <ul class="subMenu">
+                    <li><a class="text-color" href="https://500px.com/css">500px</a></li>
+                    <li><a class="text-color" href="https://rxcs.vsco.co/">VSCO</a></li>
+                    <li><a class="text-color" href="https://unsplash.com/css/">Unsplash</a></li>
+                    <li><a class="text-color" href="https://instagram.com/reagentx">Instagram</a></li>
+                </ul></li>
+                            </li>
+            <li class="menuItem"><a class="text-color" href="contact.html">CONTACT</a>
+
+                <ul class="subMenu">
+                    <li><a class="text-color" href="contact.html">Email</a></li>
+                    <li><a class="text-color" href="twitter.html">Twitter</a></li>
+                    
+                    
+                </ul>
+            </li>
+        </ul>
+        <div class="pages row-fluid">
+        </div>
+    </div>
+
+
+<a href='https://alpha.app.net/css' rel='me' data-type='follow' data-user-id='@css'> </a>
+
+</body>
+
+<script type="text/javascript">
+  var bodyClicked = false;
+  var iframeWrapper = document.getElementById('iframe-wrapper');
+  var standardBody = (document.compatMode == "CSS1Compat") ? document.documentElement : document.body;
+
+
+  function mouseFollower(e) {
+    // for internet explorer
+    if (window.event) {
+      iframeWrapper.style.top = (window.event.y - 5) + standardBody.scrollTop + 'px';
+      iframeWrapper.style.left = (window.event.x - 5) + standardBody.scrollLeft + 'px';
+    }
+    else {
+      iframeWrapper.style.top = (e.pageY-5) + 'px';
+      iframeWrapper.style.left = (e.pageX-5) + 'px';
+    }
+  }
+
+  document.onmousemove = function(e) {
+    if(bodyClicked == false) {
+      mouseFollower(e);
+    }
+  }
+</script>
+
+
+</html>

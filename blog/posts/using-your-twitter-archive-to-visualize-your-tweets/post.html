@@ -1,0 +1,69 @@
+<p>In December 2012, Twitter unveiled its “<a href="https://blog.twitter.com/2012/your-twitter-archive" rel="nofollow">Archive</a>” functionality, allowing users to download backups of all of their tweets. The downloaded files included a html interface for searching and reading tweets, which becomes very tedious and cumbersome with large amounts of data. The download also includes a .csv file that includes the raw data. We will be using this data for the following project. My data only goes through March 2015 because I used <a href="https://github.com/benjaminjackson/shame-eraser" rel="nofollow">Shame Eraser</a> to delete them all from <a href="http://twitter.com/rxcs" rel="nofollow">my account</a>. </p>
+
+<p>The .csv should first be reformatted to an Excel Workbook to speed up the processing of data. The data table contains the following columns:</p>
+
+<pre><code>tweet_id
+in_reply_to_status_id
+in_reply_to_user_id
+timestamp
+source
+text
+retweeted_status_id
+retweeted_status_user_id
+retweeted_status_timestamp
+expanded_urls
+</code></pre>
+
+<p>We will primarily be using the following, as well as 2 new ones we will be adding later:</p>
+
+<pre><code>in_reply_to_user_id
+timestamp
+source
+text
+retweeted_status_id
+</code></pre>
+
+<p><em>All of the charts below are made with PivotTables. If you do not have access to Excel 2015 or later for OS X you cannot accomplish the following.</em></p>
+
+<p>Our first chart will track our tweet density over time.</p>
+
+<p><a href="https://img.svbtle.com/mqfdh0rovrcwg.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/mqfdh0rovrcwg.png" alt="rxcs Tweet Density.png"></a></p>
+
+<p>Our first pivot will contain 2 items, <code>timestamp</code> and <code>text</code>. Place <code>timestamp</code> in the column section and group how you like. I selected Months and Years. <code>text</code> should go under values and set to summarize as “count.” From here, you can make the chart. It should appear in the PivotTable Builder as follows:</p>
+
+<p><a href="http://img.svbtle.com/mb9hjwrtzgtdza.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/mb9hjwrtzgtdza_small.png" alt="Screen Shot 2015-08-15 at 2.59.28 AM.png"></a></p>
+
+<p>Our next chart is slightly less complicated. It will display the number of normal tweets, retweets, and replies or account has made.</p>
+
+<p><a href="http://img.svbtle.com/fl17bxnnuvviqa.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/fl17bxnnuvviqa.png" alt="rxcs Tweet Type.png"></a></p>
+
+<p>This pivot will contain 3 items, <code>in_reply_to_user_id</code>, <code>retweeted_status_id</code>, and <code>text</code>, all set to summarize as count. The PivotTable Builder should display the following:</p>
+
+<p><a href="http://img.svbtle.com/e2fdvpynhrbj5w.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/e2fdvpynhrbj5w_small.png" alt="Screen Shot 2015-08-15 at 2.30.18 AM.png"></a></p>
+
+<p>Our third chart is slightly more complex than the first. It will show the distribution of the length of tweets.</p>
+
+<p><a href="http://img.svbtle.com/hf7zfgpamjquq.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/hf7zfgpamjquq.png" alt="rxcs Tweet Length.png"></a></p>
+
+<p>To accomplish this, we must add a new column to our data file. Add a new column next to the text column and make the title something like <code>Count chars</code>. The cells should read <code>=LEN(G2)</code>, where G2 is the reference to the cell directly to the left in the <code>text</code> column. </p>
+
+<p>Make a new pivot from this data. Make the rows <code>Count chars</code> and the values <code>Count chars</code> set to summarize as count. It should appear as follows in the PivotTable Builder:</p>
+
+<p><a href="http://img.svbtle.com/0seri14x3ujvdg.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/0seri14x3ujvdg_small.png" alt="Screen Shot 2015-08-15 at 2.39.21 AM.png"></a></p>
+
+<p>Finally, we will make a chart that shows the number of tweets per source, i.e. the number of tweets that are sent to Twitter using a certain application. </p>
+
+<p><a href="http://img.svbtle.com/kkpinr3fvrxioq.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/kkpinr3fvrxioq.png" alt="rxcs Tweets Per Source.png"></a>
+<em>Note: This chart excludes apps with a count of &lt; 10 due to the volume of 1-time tweets. It also excludes Tweetbot for iOS, which, for me, summed to 68,175.</em></p>
+
+<p>We must first sanitize the <code>source</code> column to make it easily readable, since it contains the HTML code for the App URL in addition to the name of the app. To accomplish this, we will add a new column directly next to the <code>source</code> column. I called mine <code>source-clean</code>. The following formula should strip the name out of the <code>source</code> column:</p>
+
+<pre><code>=IF(MID(LEFT(E3,FIND("",E3)-1),FIND("&gt;",E3)+1,LEN(E3))="Tweetbot for iÎŸS","Tweetbot for iOS",MID(LEFT(E3,FIND("",E3)-1),FIND("&gt;",E3)+1,LEN(E3)))</code></pre>
+
+<p>Technically you only need <code>=MID(LEFT(E3,FIND("&lt;/",E3)-1),FIND("&gt;",E3)+1,LEN(E3))</code>, but my archive seemed to have some malformed unicode, displaying “Tweetbot for iOS’ as "Tweetbot for iÎŸS,” necessitating the <code>=IF</code>. In either instance, E3 represents the <code>source</code> cell directly to the left of the <code>source-clean</code> cell. This will fill down to the bottom and correctly strip the names out of the <code>source</code> cells. </p>
+
+<p>From here, we can make our pivot. Use <code>source-clean</code> as the row and <code>text</code> as the value, summarized a count. The PivotTable Builder should display the following:</p>
+
+<p><a href="http://img.svbtle.com/afkczjkab6xha.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/afkczjkab6xha_small.png" alt="Screen Shot 2015-08-15 at 2.56.13 AM.png"></a></p>
+
+<p>And there you have it: 4 very interesting and telling graphs about your history on Twitter, all directly compiled from your Twitter Archive. </p>

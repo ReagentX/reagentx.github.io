@@ -1,0 +1,56 @@
+<p>Slow storage is a problematic bottleneck for console gaming. The 5200 RPM Hard Drive and SATA II connection inside the Xbox One are the primary bottlenecks for asset decompression and loading times. Although they keep the manufacturing costs down, they dramatically increase time spent loading compressed assets on the fly, multiplying the already slow rendering from the <a href="https://www.techpowerup.com/gpudb/2086/xbox-one-gpu.html">AMD Durango</a> processor.</p>
+
+<p>SATA II is archaic and slow, so replacing the internal drive is not an adequate solution. The USB 3 ports on the back provide a perfect answer: no voided warranty, no messy deconstruction, and far faster transfer speeds. USB 3 can transfer at up to 640 megabytes per second while SATA II can transfer at up to 300 megabytes per second. Since USB 3 is more accessible and faster, it is the best choice to bypass the console’s storage bottleneck.</p>
+
+<p>I used a 1TB <a href="http://www.frys.com/product/7741828;jsessionid=GbCI3yxq6kh7PvzBMz1v9g__.node1">Seagate Laptop SSHD</a> that combines an 8GB SSD with a 7200RPM HDD for the storage and a generic USB 3.0 SATA III <a href="http://www.frys.com/product/8057834">Docking Station</a> to connect it. The whole setup cost me less than $100 when I bought these items in-store at Fry’s.</p>
+
+<p>Plugging them in is simple: just insert the drive into the docking station and plug that into the Xbox One. The console will ask you to format and name the drive. When the console notifies you that the external storage is ready, you can begin to copy the games over from the internal HDD.</p>
+
+<p>To ascertain the performance increases from the removal of the old storage bottleneck, I ran some benchmarks. The following table consists of fast-travel loading times from The Witcher 3: Wild Hunt. I ran the tests 5 times and averaged the resulting times. All calculations were made in Excel.</p>
+
+<table>
+  <tr>
+    <th>Fast Travel Locations</th>
+    <th>Internal HDD</th>
+    <th>External SSHD</th>
+    <th>% Reduction</th>
+  </tr>      
+  </tr>
+  <tr>
+    <td>Upper Mill to Heirarch Square</td>
+    <td align="center">39.88</td>
+    <td align="center">21.88</td>
+    <td align="center">45%</td>
+  </tr>
+  <tr>
+    <td>Heirarch Square to Royal Palace in Vizima</td>
+    <td align="center">29.96</td>
+    <td align="center">16.20</td>
+    <td align="center">46%</td>
+  </tr>
+  <tr>
+    <td>Royal Palace in Vizima to Kaer Morhen</td>
+    <td align="center">30.83</td>
+    <td align="center">17.52</td>
+    <td align="center">43%</td>
+  </tr>
+  <tr>
+    <td>Kaer Morhen to Bridge to Kaer Trolde</td>
+    <td align="center">59.86</td>
+    <td align="center">39.93</td>
+    <td align="center">33%</td>
+  </tr>
+  <tr>
+    <td>Reload Save After Jumping from Bridge to Kaer Trolde</td>
+    <td align="center">1:07.46</td>
+    <td align="center">40.10</td>
+    <td align="center">41%</td>
+  </tr>
+</table>
+
+<p>The average load time reduction is 42%, nearly cutting wait time in half. Loading between fast travel points that are much closer together is near instant. There are many other noticeable improvements as well: many games use a progressive asset loading algorithm that loads meshes and textures based on distance from the player to cut down memory constraints. This practice can lead to low-quality placeholders showing while higher-quality assets are decompressed. The new storage alleviates this quite well; I have not noticed any of this occurring in Witcher 3 since installation.</p>
+
+<p>For less than $100, the new drive and dock make an incredibly cost-effective solution to the memory bottleneck.</p>
+
+<center><p>Discussion: <a href="https://www.reddit.com/r/xboxone/comments/3zj9c6/an_external_sshd_decreases_loading_time_by_about/">r/XboxOne</a></p></center>
+

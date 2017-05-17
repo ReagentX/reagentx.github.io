@@ -1,0 +1,607 @@
+<div class="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a>
+
+<ul>
+<li><a href="#gameoverview">Game Overview</a></li>
+<li><a href="#researchquestions">Research Question(s)</a></li>
+</ul></li>
+<li><a href="#dataprocessing">Data Processing</a>
+
+<ul>
+<li><a href="#parsingthedemo">Parsing the Demo</a></li>
+<li><a href="#massagingthedata">Massaging the Data</a>
+
+<ul>
+<li><a href="#generalsheet">General Sheet</a></li>
+<li><a href="#roundssheet">Rounds Sheet</a>
+
+<ul>
+<li><a href="#matchwinner">Match Winner</a></li>
+<li><a href="#roundwinnermatchwinner">Round Winner = Match Winner?</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li><a href="#analysis">Analysis</a>
+
+<ul>
+<li><a href="#excelanalysis">Excel Analysis</a>
+
+<ul>
+<li><a href="#pistolroundimpact">Pistol Round Impact</a></li>
+<li><a href="#economicresourceimpact">Economic Resource Impact</a></li>
+<li><a href="#preppingforstata">Prepping for Stata</a></li>
+</ul></li>
+<li><a href="#stataanalysis">Stata Analysis</a>
+
+<ul>
+<li><a href="#chartingkillfrequency">Charting Kill Frequency</a></li>
+<li><a href="#equipmentvalue">Equipment Value</a></li>
+<li><a href="#ecoandsemi-eco">Eco and Semi-Eco</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#rawdata">Raw Data</a></li>
+<li><a href="#disclosureandnotes">Disclosure and Notes</a>
+
+<ul>
+<li><a href="#softwareused">Software Used</a>
+
+<ul>
+<li><a href="#proprietary">Proprietary</a></li>
+<li><a href="#opensource">Open Source</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+
+<hr />
+
+<h1 id="introduction">Introduction</h1>
+
+<p>eSports — a form of sports where the primary aspects are facilitated by electronic systems — provide unique opportunities to mine and analyze data. Every aspect of eSports matches can be recorded digitally and analyzed with software, vastly reducing the energy required to collect and interpret patterns. The recent MLG Major Counter-Strike Global Offensive competition in Columbus, Ohio is one of these opportunities.</p>
+
+<p><a href="https://en.wikipedia.org/wiki/Counter-Strike_(series)">Counter-Strike: Global Offensive</a> (CS:GO) is an internationally acclaimed competitive skill-based First Person Shooter developed by Valve LLC. Released in 2000, it has a long history in competitive gaming (eSports), attracting over a million viewers at the 2016 Major League Gaming competition in Columbus, Ohio. </p>
+
+<h2 id="gameoverview">Game Overview</h2>
+
+<p>In competitive mode, matches are broken down as follows:</p>
+
+<ul>
+<li>Two 15-round halves (30 possible rounds without overtime)</li>
+<li>16 round wins required to win (more if overtime has been reached)</li>
+<li>The first round of each half restricts weapon purchases to pistols</li>
+<li>Depending on the outcome of the round, each team is rewarded with in-game money to purchase better gear</li>
+<li>Winning the pistol round guarantees a minimum $3000 reward while losing nets $1400</li>
+</ul>
+
+<h2 id="researchquestions">Research Question(s)</h2>
+
+<p>Originally, this project’s aim was to ascertain the impact winning a pistol round in Counter-Strike: Global Offensive has on winning the match. As the data grew, the scope of this project increased beyond this single question to a general analysis of the effectiveness of teams’ economic management.</p>
+
+<h1 id="dataprocessing">Data Processing</h1>
+
+<p><a href="HLTV.org">HLTV.org</a> keeps a brilliant searchable <a href="http://www.hltv.org/matches/archive/">index</a> of historical CS:GO matches. To focus on the Columbus 2016 competition, set <em>Events</em> to <em>MLG Columbus 2016</em> and download the demo files for each match. Demo files contain highly compressed information about matches. They allow users to accurately recreate matches inside the game engine. Demo files also provide a unique window for analyzing play without manually recording a single piece of data.</p>
+
+<h2 id="parsingthedemo">Parsing the Demo</h2>
+
+<p><a href="https://github.com/akiver/CSGO-Demos-Manager">CSGO-Demos-Manager</a> is an invaluable open-source tool for analyzing CS:GO demo files. It will “play” through a demo, tracking many different variables. Because the project is open source, it is easily extensible. However, it only runs on Windows. </p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/csgodemosmanager.png" alt="CS:GO-Demos-Manager" />
+<figcaption>CS:GO-Demos-Manager</figcaption>
+</figure>
+
+<p>Once CSGO-Demos-Manager has analyzed the relevant demo files, users can choose to export the data to Excel as a group or individually. Both of the exports look more or less the same: a 6-sheet Excel table:</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/mlgfull.png" alt="MLG 2016 flat file with additional calculated columns" />
+<figcaption>MLG 2016 flat file with additional calculated columns</figcaption>
+</figure>
+
+<p>This provides a strong basis to start analyzing various aspects of the event as well as ascertain important levels of performance.</p>
+
+<h2 id="massagingthedata">Massaging the Data</h2>
+
+<p>The most important column to add to the table is also the most tedious. Before the CSGO-Demos-Manager created column <code>Number</code><sup><a href="#fn27494" id="fnr27494" title="see footnote" class="footnote">1</a></sup> it is best to a new column, <code>Demo ID</code>. This creates a faux primary key<sup><a href="#fn44301" id="fnr44301" title="see footnote" class="footnote">2</a></sup> to compare individual matches with ending match results. Without this, there is no way to pull data related to the overall match from the <code>General</code> sheet to the <code>Rounds</code> sheet. To do this, manually copy the relevant Demo ID from column <code>B</code> on the <code>General</code> sheet.</p>
+
+<h3 id="generalsheet">General Sheet</h3>
+
+<p>Sadly, CSGO-Demos-Manager <a href="https://github.com/akiver/CSGO-Demos-Manager/issues/74">improperly symbolicates</a> the <code>Winner</code> column. To resolve this, replace that column with the following formula<sup><a href="#fn61108" id="fnr61108" title="see footnote" class="footnote">3</a></sup>: <code>=IF(N2&gt;O2,L2,M2)</code>.</p>
+
+<p>This checks if Team 1’s score is larger than Team 2’s score. If this case is met, the formula outputs Team 1’s name; if the case is not met, it outputs Team 2’s name.</p>
+
+<h3 id="roundssheet">Rounds Sheet</h3>
+
+<p>The <code>Rounds</code> tab can now be related to the <code>General</code> sheet thanks to the <code>Demo ID</code> column added earlier.</p>
+
+<h4 id="matchwinner">Match Winner</h4>
+
+<p>This column references the <code>General</code> sheet and tells us what the winner of the entire match is. This is important when looking for variables that affect the outcome of entire matches and not individual rounds. To do this, use <code>=VLOOKUP(A2,General!B:AT,19,FALSE)</code>.<sup><a href="#fn77915" id="fnr77915" title="see footnote" class="footnote">4</a></sup></p>
+
+<p>As a sanity check, the <code>Match Winner</code> column should remain the same for a given set of rounds. It does, so this calculation appears accurate.</p>
+
+<h4 id="roundwinnermatchwinner">Round Winner = Match Winner?</h4>
+
+<p>Now that the data shows who won the overall match, it is trivial to see how often a match winner was a round winner. The simple formula <code>=IF(AJ2=E2,1,0)</code> checks if the winner of the round is the same as the winner of the match. It returns a dummy variable, <strong>0</strong>, if the teams do not match and <strong>1</strong> if they do.</p>
+
+<p>As a sanity check, this column should have a larger sum than the number of rows since winners naturally have more round wins. The spreadsheet has 1,112 rows, 663 of which read <strong>1</strong>, so this calculation appears accurate. </p>
+
+<h1 id="analysis">Analysis</h1>
+
+<p>Now that the data has been adequately prepared, the real work can begin. Both Excel and Stata prove to be integral tools for analyzing and visualizing the data sets.</p>
+
+<h2 id="excelanalysis">Excel Analysis</h2>
+
+<p>For simpler analysis and visualization, Excel’s tools are easy to use and works well. </p>
+
+<h3 id="pistolroundimpact">Pistol Round Impact</h3>
+
+<p>The original research question posited that the pistol round positively influenced a team’s chance to win the match. This is easily ascertained with a basic Excel analysis. </p>
+
+<p>First, the relevant data must be extracted from the <code>Rounds</code> sheet. We can use the <code>Match Winner</code> column created earlier to make a simple dummy variable to simplify counting. Insert a new column to the right of the dataset called <code>Round Winner = Match Winner?</code> and use <code>=IF(AI2=E2,1,0)</code> to check if the Match Winner is the same as the Round Winner. If they are the same, the equation returns <strong>1</strong>. If not it returns <strong>0</strong>.<sup><a href="#fn94722" id="fnr94722" title="see footnote" class="footnote">5</a></sup></p>
+
+<p>Once the <code>Round Winner = Match Winner?</code> column has been created, it is simple to count the data with a simple <code>=COUNTIF</code> formula. Create two cells far off to the right of the data and use the following formula: <code>=COUNTIFS(H:H,&quot;Pistol round&quot;, AO:AO,1)</code>. This checks the <code>Type</code> column and restricts it to pistol rounds and then counts the frequency of <strong>1</strong> in the <code>Round Winner = Match Winner?</code> column. Directly this we use `<code>=COUNTIFS(H:H,&quot;Pistol round&quot;, AO:AO,0)</code> to get the frequency of <strong>0</strong> in the same column.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/roundcountif1.png" alt="" />
+</figure>
+
+<p>Simple division with <code>=BB2/COUNTIF(H:H, &quot;Pistol round&quot;)</code> and <code>=BB3/COUNTIF(H:H, &quot;Pistol round”)</code> allow us to calculate the proportion of wins and losses. According to the data, this results in:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Type</th>
+	<th style="text-align:left;">Value</th>
+	<th style="text-align:left;">Proportion</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">Match</td>
+	<td style="text-align:left;">55</td>
+	<td style="text-align:left;">67%</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Doesn’t Match</td>
+	<td style="text-align:left;">27</td>
+	<td style="text-align:left;">33%</td>
+</tr>
+</tbody>
+</table>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/pistolpie.png" alt="" />
+</figure>
+
+<p>The data shows a 67% match rate, which indicates that the Pistol Round winner is the Match Winner 67% of the time. This is to say that winning the pistol round achieves a 2/3 probability of winning the entire match. To clarify, the word “Match” in the chart indicates rounds where the pistol round winner matches the match winner.</p>
+
+<h3 id="economicresourceimpact">Economic Resource Impact</h3>
+
+<p>Before calculating the impact resources has on a match, the data must describe the frequency of economic impact on individual rounds. This can partially be calculated in Excel, however more advanced analysis will require Stata.</p>
+
+<p>First, it is necessary to create a new formula that outputs a dummy variable. <strong>1</strong> should define when the winner has more resources, <strong>0</strong> should define when the winner has less. The simplest way to accomplish this is to create a new column called <code>Winner Spend More On Equipment?</code> and reference the <code>General</code> sheet and <code>Match Winner</code> column: </p>
+
+<pre><code>=IF(IF(Z2&gt;AB2,VLOOKUP(A2,General!B:AT,11,FALSE),VLOOKUP(A2,General!B:AT,12,FALSE))=AI2,1,0)</code></pre>
+
+<p>This formula uses a nested <code>=IF</code>. The interior statement checks if Team 1 starts with more equipment than Team 2. If Team one starts with more, the formula pulls Team 1’s name from the <code>General</code> sheet. If Team 2 starts with more, it pulls that name instead. Next, the exterior statement compares the string result from the interior statement to the string in the <code>Match Winner</code> column. If the strings match, Team 1 is the winner, and the formula outputs a <strong>1</strong>. If Team 2 is the winner, the formula outputs <strong>0</strong>. This column now calculates which team has better equipment and if having better equipment corresponds with a win.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/roundcountif2.png" alt="" />
+</figure>
+
+<p>As before, use <code>=COUNTIF(AR:AR,1)</code> and <code>=COUNTIF(AR:AR,0)</code> to count the frequency at which this specific test occurs. This formula is far simpler than before because we are not using other columns to restrict counting.</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Type</th>
+	<th style="text-align:left;">Value</th>
+	<th style="text-align:left;">Proportion</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">Winner has More Equipment</td>
+	<td style="text-align:left;">633</td>
+	<td style="text-align:left;">60%</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Winner has Less Equipment</td>
+	<td style="text-align:left;">449</td>
+	<td style="text-align:left;">40%</td>
+</tr>
+</tbody>
+</table>
+
+<p>Further, <code>=BB8/SUM(BB8:BB9)</code> and <code>=BB9/SUM(BB8:BB9)</code> can be used to calculate the relevant proportion.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/econpie.png" alt="" />
+</figure>
+
+<p>The winner has better equipment 60% of the time — barely more than half. This demonstrates that, at the professional level, the game’s economy has little effect on various outcomes. </p>
+
+<h3 id="preppingforstata">Prepping for Stata</h3>
+
+<p>Sadly, Excel hits a wall when it comes to more advanced econometric plotting and analysis. However, Stata’s data entry system can be slow and arduous; it is often a better choice to use Excel to create the data and then simply copy it into Stata. This section will describe several new columns that will not be used in the Excel analysis but will come into play for the Stata section.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/formulacells.png" alt="" />
+</figure>
+
+<p>These columns in the <code>Rounds</code> sheet are as follows:</p>
+
+<ul>
+<li>Match Winner
+
+<ul>
+<li>Outlined above</li>
+<pre><code>=VLOOKUP(A2,General!B:AT,19,FALSE)</code></pre>
+</ul></li>
+<li>Is Team 1 the Winner?
+
+<ul>
+<li>Checks if Team 1 is the winner based on the Team 1 in the <code>general</code> sheet.</li>
+<li>Dummy variable that returns <strong>1</strong> if Team 1 is the winner, <strong>0</strong> if not</li>
+<pre><code>=IF(VLOOKUP(A2,General!B:AT,11,FALSE)=E2,1,0)</code></pre>
+</ul></li>
+<li>Does Team 1 Have More Money?
+
+<ul>
+<li>Checks to see if Team 1 has more money than Team 2.</li>
+<li>Dummy variable that returns <strong>1</strong> if Team 1 has more money, <strong>0</strong> if not</li>
+<li><code>=IF(Y2&gt;AA2,1,0)</code></li>
+</ul></li>
+<li>Does Team 1 have More Equipment?
+
+<ul>
+<li>Dummy variable that returns <strong>1</strong> if Team 1 has better equipment, 0so this calculation appears accurate if not</li>
+<li><code>=IF(Z2&gt;AB2,1,0)</code></li>
+</ul></li>
+<li>Start Money Team 1 - Start Money Team 2
+
+<ul>
+<li>Determines the difference between Team 1’s economy and Team 2’s economy</li>
+<li><code>=Y2-AA2</code></li>
+</ul></li>
+<li>Spend Team 1 - Spend Team 2<sup><a href="#fn11530" id="fnr11530" title="see footnote" class="footnote">6</a></sup>
+
+<ul>
+<li>Determines the difference between Team 1’s buy and Team 2’s buy</li>
+<li><code>=Z2-AB2</code></li>
+</ul></li>
+<li>Round Winner = Match Winner?
+
+<ul>
+<li>Outlined above</li>
+<li><code>=IF(AI2=E2,1,0)</code></li>
+</ul></li>
+<li>CT or T?
+
+<ul>
+<li>Checks if the winning team is counter-terrorist or terrorist</li>
+<li>Returns a dummy variable <strong>1</strong> if the winning team is counter-terrorist and <strong>0</strong> if not</li>
+<li><code>=IF(F2=&quot;CT&quot;,1,0)</code></li>
+</ul></li>
+<li>Winner Start with More Money?
+
+<ul>
+<li>Uses a nested <code>=IF</code> to create a dummy variable <strong>1</strong> if the Winner starts with more money and <strong>0</strong> if not</li>
+<li>Similar to <code>winner spend more on equipment</code> outlined above</li>
+<pre><code>=IF(IF(Y2&gt;AA2,VLOOKUP(A2,General!B:AT,11,FALSE),VLOOKUP(A2,General!B:AT,12,FALSE))=AI2,1,0)</code></pre>
+</ul></li>
+<li>Winner Spend More On Equipment?<sup><a href="#fn28337" id="fnr28337" title="see footnote" class="footnote">7</a></sup>
+
+<ul>
+<li>Outlined above</li>
+<pre><code>=IF(IF(Z2&gt;AB2,VLOOKUP(A2,General!B:AT,11,FALSE),VLOOKUP(A2,General!B:AT,12,FALSE))=AI2,1,0)</code></pre>
+</ul></li>
+<li>Difference Between Winner and Loser Starts
+
+<ul>
+<li>Calculates the difference in resources between Team 1 and Team 2.</li>
+<pre><code>=IF(VLOOKUP(A2,General!B:AT,11,FALSE)=E2,Y2-AA2,AA2-Y2)</code></pre>
+</ul></li>
+<li>Difference Between Winner and Loser Spends<sup><a href="#fn45144" id="fnr45144" title="see footnote" class="footnote">8</a></sup>
+
+<ul>
+<li>Calculates the difference in equipment value between Team 1 and Team 2.</li>
+<pre><code>=IF(VLOOKUP(A2,General!B:AT,11,FALSE)=E2,Z2-AB2,AB2-Z2)</code></pre>
+</ul></li>
+</ul>
+
+<h2 id="stataanalysis">Stata Analysis</h2>
+
+<p>State provides a robust platform for advanced econometric analysis.</p>
+
+<h3 id="chartingkillfrequency">Charting Kill Frequency</h3>
+
+<p>The first visualization in Stata is relatively simple. First, we must adjust the kill data on the <code>Players</code> sheet of <em>MLG2016Full.xlsx</em>. This adjustment will account for the amount of rounds players participated in. If the data is not adjusted, players that played more rounds that have higher overall totals will end up above players that have a higher ratio of kills per round. </p>
+
+<p>To accomplish this, add 5 columns, one for each kill quantity.<sup><a href="#fn61951" id="fnr61951" title="see footnote" class="footnote">9</a></sup> Because the number of rounds played is static, the formula <code>=L2/$J2</code> can be used to calculate the correct ratios. Locking the denominator to the <code>J</code> column ensures the <code>Rounds</code> column is always used while also allowing the formula to be filled relatively.</p>
+
+<p>Next, the kill totals must also be adjusted. Adding a column next to kills with <code>=D2/C2</code><sup><a href="#fn78758" id="fnr78758" title="see footnote" class="footnote">10</a></sup> will adjust the kill count to a per-match ratio. If we do not adjust the kill totals, we get skewed output like this:</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adjk-scatter.png" alt="Total kills plotted against adjusted kill quantity" />
+<figcaption>Total kills plotted against adjusted kill quantity</figcaption>
+</figure>
+
+<p>The file <em>MLGPlayerData.dta</em> attached below already has these columns inserted. </p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adj-table.png" alt="Location of unadjusted and adjusted data columns" />
+<figcaption>Location of unadjusted and adjusted data columns</figcaption>
+</figure>
+
+<p>Once the data is imported to Stata, we use the <code>scatter</code> command to make the scatterplot. To scatter Total Kills to the Adjusted 1K Ratio, enter <code>scatter killspermatch adj1, mlabel(name)</code>. To scatter the other adjusted kill ratios, use <code>adj2</code>, <code>adj3</code>, and so on. Adding <code>,mlabel(name)</code> tags each point with the corresponding player name.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adjkill-andkn.png" alt="Adjusted total kills plotted against adjusted kill quantity" />
+<figcaption>Adjusted total kills plotted against adjusted kill quantity</figcaption>
+</figure>
+
+<p>Vertical height denotes more overall kills per round. Horizontal extension denotes the propensity of a player to hit that certain amount of kills: the further right a player is, the more often they hit that number of kills per round. </p>
+
+<p>I omitted <code>adj5</code> from this visualization because only 7 players achieved 5k.<sup><a href="#fn95565" id="fnr95565" title="see footnote" class="footnote">11</a></sup> There is not enough data to draw a reasonable conclusion. </p>
+
+<h3 id="equipmentvalue">Equipment Value</h3>
+
+<p>Each round rewards players with various income based on individual and group performance. Regression models can describe how the gameplay economy affects match outcomes.</p>
+
+<p>The <code>Rounds</code> sheet holds all of the data used for the regression analysis. Thanks to the columns added prior, copying and pasting directly into Stata allows us to dove right into the data.<sup><a href="#fn12373" id="fnr12373" title="see footnote" class="footnote">12</a></sup></p>
+
+<p>These imported variable names are quite long. Luckily, Stata has an autocomplete feature: press the <strong>Tab</strong> key to bring up a list of variables that complete the text entered in the command line.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/tabautocomplete.png" alt="" />
+</figure>
+
+<p>Regressing variables onto <code>isteam1thewinner</code> will find the impact said variables have on influencing Team 1 to beat Team 2. For example, <code>reg isteam1thewinner equipementvalueteam1 equipementvalueteam2</code> does a multiple regression to ascertain the effects variables <code>equipementvalueteam1</code> and <code>equipementvalueteam2</code> have on the variable <code>isteam1thewinner</code>. This command results in:</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg1.png" alt="Regressing variables equipementvalueteam1 and equipementvalueteam2 onto isteam1thewinner." />
+<figcaption>Regressing variables equipementvalueteam1 and equipementvalueteam2 onto isteam1thewinner.</figcaption>
+</figure>
+
+<p>This tells is that β<sub>2</sub> and β<sub>3</sub> — the respecive effects of <code>equipementvalueteam1</code> and <code>equipementvalueteam2</code> — have inverse impacts on Team 1 winning a round (y). β<sub>1</sub>, the constant, shows that if both teams are equal, there is a 50% chance that team 1 wins. </p>
+
+<p>The full equation reads <code>y = 0.0000164x - 0.0000186z + 52.5</code> where <code>x</code> is the dollar value of Team 1’s gear and <code>z</code> is the dollar value of Team 2’s gear. Each dollar of Team 1 gear raises their chance of winning by 0.00164% and each dollar of Team 2 Gear lowers Team 1’s chance of winning by 0.00186%. All things considered, this results in very little economic impact on professional gameplay unless there are large differences in the buying power of each team.</p>
+
+<p>The variable <code>doesteam1havemoreequipment</code> allows us to perform another simple regression onto <code>isteam1thewinner</code>, this time to determine the overall effect of having more equipment. </p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg2.png" alt="Regressing variable doesteam1havemoremoney onto isteam1thewinner" />
+<figcaption>Regressing variable doesteam1havemoremoney onto isteam1thewinner</figcaption>
+</figure>
+
+<p>The constant here is approximately <code>0.31</code> while β<sub>2</sub> is about <code>0.32</code>. This means the regression line would be <code>y=0.32x + 0.31</code> where <code>y</code> is the percent chance of winning. This tells us that there is a 31% chance of winning when Team 1 has less equipment and a 63% chance of winning when Team 1 has more equipment. This confirms the earlier Excel analysis that posited the winner has more equipment 60% of the time:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Type</th>
+	<th style="text-align:left;">Value</th>
+	<th style="text-align:left;">Proportion</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">Winner has More Equipment</td>
+	<td style="text-align:left;">633</td>
+	<td style="text-align:left;">60%</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Winner has Less Equipment</td>
+	<td style="text-align:left;">449</td>
+	<td style="text-align:left;">40%</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="ecoandsemi-eco">Eco and Semi-Eco</h3>
+
+<p>Value of team inventories occasionally forces teams to save and purposely not buy inventory — a strategy dubbed <em>Eco</em> or <em>Semi-eco</em> to try and push back later. CSGO-Demos-Manager is able to automatically analyze the type of round and conveniently creates a <code>Type</code> column that contains the information:</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/tabulate.png" alt="" />
+</figure>
+
+<p>To study the effects of this strategy the data needs to be restricted to only show <em>Eco</em> and <em>Semi-eco</em> rounds: simply filter the <code>Type</code> column on the <code>Round</code> sheet.<sup><a href="#fn29180" id="fnr29180" title="see footnote" class="footnote">13</a></sup></p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/filtereco.png" alt="" />
+</figure>
+
+<p>Once the data has been restricted and imported to Stata, regressing <code>doesteam1havemoremoney</code> onto <code>isteam1thewinner</code> elucidates the effects of better equipment:</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg3.png" alt="" />
+</figure>
+
+<p>The regression line is <code>y = 0.79x + 0.126</code>. This tells us that having more equipment — β<sub>2</sub> — raises the odds of winning an eco or semi-eco round by 79%. While this is high, it means that variables other than equipment affect the outcome of eco rounds – but only 9% of the time.</p>
+
+<hr />
+
+<h1 id="rawdata">Raw Data</h1>
+
+<p>This data comes in 3 major formats: Demo (.dem), Excel (.xlsx), and Stata (.dta). HLTV.org hosts the demo files. All of the files used are located in the <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data">/data</a> directory of this post. These are the individual files with respective descriptions:</p>
+
+<ul>
+<li><em>MLG2016Full.xlsx</em> (461 kb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLG2016Full.xlsx">Direct Download</a> | <a href="https://docs.google.com/spreadsheets/d/1ci4yTP9FrUfPLdJMhRcWZcntQu9HQ9uwIdjTNWrd3bM/edit#gid=1079598177">View Google Sheet</a>
+
+<ul>
+<li>Annotated and formatted like this article describes</li>
+<li>Excel file with 6 sheets of data summarizing the entire event:
+
+<ul>
+<li><code>General</code> contains a summary for each match
+
+<ul>
+<li><code>Winner</code> column augmented with formula <code>=IF(N2&gt;O2,L2,M2)</code></li>
+</ul></li>
+<li><code>Players</code> contains statistics for each player
+
+<ul>
+<li><code>K/D</code> column augmented with formula <code>=D2/F2</code></li>
+</ul></li>
+<li><code>Maps</code> contains map statistics</li>
+<li><code>Teams</code> contains team statistics</li>
+<li><code>Weapons</code> contains various weapon statistics
+
+<ul>
+<li>Contains additional calculated columns
+
+<ul>
+<li><code>Damage per Shot</code> calculated with <code>=D2/E2</code></li>
+<li><code>Damage per Hit</code> calculated with <code>=C2/F2</code></li>
+</ul></li>
+</ul></li>
+<li><code>Rounds</code> contains round statistics
+
+<ul>
+<li>Contains several formulaic columns separated from static columns by a vertical black line; index included beside the data.</li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li><em>MLGTeamData.dta</em> (26 kb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGTeamData.dta">Direct Download</a>
+
+<ul>
+<li>Stata file with variables pulled from the <code>Teams</code> sheet of <em>MLG2016Full.xlsx</em></li>
+</ul></li>
+<li><em>MLGPlayerData.dta</em> (45 kb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGPlayerData.dta">Direct Download</a>
+
+<ul>
+<li>Stata file with variables pulled from the <code>Players</code> sheet of <em>MLG2016Full.xlsx</em></li>
+</ul></li>
+<li><em>MLGFull.dta</em> (256 kb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGFull.dta">Direct Download</a>
+
+<ul>
+<li>Stata file with variables pulled from the <code>Rounds</code> sheet of <em>MLG2016Full.xlsx</em></li>
+</ul></li>
+<li><em>rawData.zip</em> (1.1 mb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/rawData.zip">Direct Download</a>
+
+<ul>
+<li>Contains an unannotated copy of <em>MLG2016Full.xlsx</em> as well as individual data exports for each match in the Columbus 2016 competition folder according to level of bracket.</li>
+<li>This is the raw data that CSGO-Demos-Manager spits out after analyzing demo files and has not been organized.</li>
+</ul></li>
+</ul>
+
+<h1 id="disclosureandnotes">Disclosure and Notes</h1>
+
+<ul>
+<li>All data was sourced from HLTV-hosted match demos</li>
+<li>Findings, calculations, and all data are published under the CC-BY&#8211;4.0 license</li>
+<li>EnVyUs v. CLG match demo was corrupted and thus the data was not accessible</li>
+</ul>
+
+<h2 id="softwareused">Software Used</h2>
+
+<h3 id="proprietary">Proprietary</h3>
+
+<ul>
+<li>Microsoft <a href="https://en.wikipedia.org/wiki/Microsoft_Excel">Excel</a>
+
+<ul>
+<li>Data organization, calculation, and visualization</li>
+</ul></li>
+<li>StataCorp <a href="https://en.wikipedia.org/wiki/Stata">Stata</a>
+
+<ul>
+<li>Regression analysis and visualization</li>
+</ul></li>
+</ul>
+
+<h3 id="opensource">Open Source</h3>
+
+<ul>
+<li><a href="https://github.com/akiver/CSGO-Demos-Manager">CSGO-Demos-Manager</a>
+
+<ul>
+<li>Demo parsing</li>
+</ul></li>
+</ul>
+
+<center><p>Discussion on <a href="https://www.reddit.com/r/GlobalOffensive/comments/4h6oe1/mlg_columbus_2016_an_econometric_analysis/">r/GlobalOffensive</a> | View as: <a href="MLG%20Columbus%202016%20Full.pdf">PDF</a> / <a href="MLG%20Columbus%202016-%20An%20Econometric%20Analysis%20of%20Counter-Strike.txt">Markdown</a></p>
+</center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn27494">
+<p>Originally “A” <a href="#fnr27494" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn44301">
+<p>Although it is not technically unique, this value serves to relate separate pieces of the data. <a href="#fnr44301" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn61108">
+<p>This assumes you have not modified the existing order of the columns. If you have, use an <code>=IF</code> formula to check if Team 1’s score is larger than Team 2’s score. If true, output Team 1’s name; if false, output Team 2’s name. <a href="#fnr61108" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn77915">
+<p>Again, if you have moved cells around, you will need to use different references. <a href="#fnr77915" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn94722">
+<p>One could also accomplish this without creating a new column by using <code>=COUNTIFS</code> or <code>=SUMIFS</code> and focussing on all three relevant columns, however because later analysis uses the <code>round winner = match winner?</code> column it makes sense to create it now. <a href="#fnr94722" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn11530">
+<p>Actually “Equipment Value” and not “Spend” per se. <a href="#fnr11530" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn28337">
+<p>Actually “Has Better Equipment” and not “Spend More On” per se. <a href="#fnr28337" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn45144">
+<p>Actually “Equipment Values” and not “Spends” per se. <a href="#fnr45144" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn61951">
+<p>Kill quantity refers to how many kills a single player gets in a given round, i.e. 1k is one kill, 2k is 2 kills, 3k is three kills, and so on. <a href="#fnr61951" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn78758">
+<p>Inserting a column here will preserve the references to the right. <a href="#fnr78758" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn95565">
+<p>As a result, everyone is bunched up above the X axis at 0. <a href="#fnr95565" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn12373">
+<p><em>MLGFull.dta</em> located below contains this data in a pre-made Stata file. <a href="#fnr12373" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn29180">
+<p>Another solution is to <a href="http://www.stata.com/support/faqs/data-management/creating-dummy-variables/">use</a> <code>gen</code> or <code>tabulate</code> in Stata, however it is often simpler to adjust the data using Excel filters and create a new Stata file. <a href="#fnr29180" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>

@@ -1,0 +1,75 @@
+<p>Keynote, Apple’s <a href="https://www.apple.com/mac/keynote/">presentation</a> software, is often left behind by its superior competition, Powerpoint. When building slide decks, this is nearly always the case. When it comes to data visualization, however, Keynote takes the top spot.</p>
+
+<p>Keynote, as with Apple’s entire <a href="https://www.apple.com/iwork-for-icloud/">iWork suite</a>, is not aimed at dry enterprise applications, but rather at fun and simple consumer tasks. As such, Keynote’s fun aesthetic make it much easier to design modern, visually appealing data visualizations. In fact, Apple champions data visualization in their latest El Capitan <a href="https://www.apple.com/mac/keynote/">ad copy</a>:</p>
+
+<blockquote>
+When it comes to explaining data, a chart is worth a thousand words. Choose from column, bar, pie, scatter, bubble charts, and more. Use animation to add visual impact. And make your charts interactive to focus attention on important stages of the story. The effect is huge, but the effort isn’t.
+</blockquote>
+
+<p>Today, I am further visualizing data from my <a href="http://chrissardegna.com/blog/posts/using-your-twitter-archive-to-visualize-your-tweets/">Twitter Archive post</a>. The data was all compiled using Excel and manipulated there, then copied into charts’ data fields in Keynote. From there, I used various Keynote features to make the data very legible. </p>
+
+<p>First, I added a custom slide size to fit the data. To do this, select <em>Document</em> in the top right and select <em>Custom Slide Size</em> under <em>Slide Size</em>. I believe the default is set to 4:3. Infographics tend to be tall, so I chose 2048x3940:</p>
+
+<p><img src="https://i.imgur.com/xdNibDl.png" alt="Click to Enlarge"></a></p>
+
+<p>Next, I added a title to the Master slide. There are 4 objects in total, 2 text objects and 2 shape objects. Because these are on the master slide they are static, irrespective of any other content on the slide. This helps keep things aligned down the road.</p>
+
+<p><img src="https://i.imgur.com/tNU6z1i.png" alt="Click to Enlarge"></a></p>
+
+<p>To achieve the glowing effect, I added a colored shadow behind the title. This is a common trick; the gaussian blur that Apple adds makes it look fantastic. Here are the settings I used:</p>
+
+<p><img src="https://i.imgur.com/eiirtLJ.png" alt="Click to Enlarge"></a></p>
+
+<p>Next, I added the first few elements. Hit <em>Done</em> at the bottom of the screen to get out of the Master slide edit mode. I took two line objects and some circle objects and lined them up to form a timeline, then added some text objects to provide some context. The circles have different colored borders and glowing shadows to accent them as well:</p>
+
+<p><img src="https://i.imgur.com/PExQY9n.png" alt="Click to Enlarge"></a></p>
+
+<p>One of the coolest things about Keynote on El Capitan is that it supports Force Touch. Instead of ungrouping all of these elements to edit them, you can Force Touch on an element to edit it. For example, you can edit the chart data without ungrouping:</p>
+
+<center><div class="gfyitem" data-title=true data-autoplay=false data-controls=true data-expand=false data-id="VapidFinishedBarebirdbat" ></div></center>
+
+<p>Once the objects are lined up correctly, the best practice is to group them as an object. This prevents them from becoming disconnected and makes it far easier to line the further items up. I next added the first chart. Select a <em>2D Pie Chart</em> from the <em>Charts</em> menu at the top. Force-Touch or double click on the pie to edit the data. Once it is filled with the relevant data, I added some text objects and line objects to explain the data. Group the objects together when they are completed.</p>
+
+<p><img src="https://i.imgur.com/ado5Sf3.png" alt="Click to Enlarge"></a></p>
+
+<p>Next came the most complicated part: the volume line chart. Begin by adding a <em>2D Line Graph</em> from the <em>Charts</em> menu. This setup is much more complex than the others. I hid all of the items on the chart except for the line itself because I wanted to roll a custom solution. The traditional X and Y axis bars make charts look too verbose, so I removed them.</p>
+
+<p><img src="https://i.imgur.com/w7Qtz1S.png" alt="Click to Enlarge"></a></p>
+
+<p>To create the temporal separation, I used line objects set to dots and text objects. I then manually spaced them based on where I know they should be:</p>
+
+<p><img src="https://i.imgur.com/c5ejyip.png" alt="Click to Enlarge"></a></p>
+
+<p>Before grouping, the chart looked like this. It is composed of circle elements, text elements, line elements, a balloon element, and a chart.</p>
+
+<p><img src="https://i.imgur.com/HjjwWJ1.png" alt="Click to Enlarge"></a></p>
+
+<p>Finally, I moved on to the summary elements. These are mainly composed of squares and boxes and do not use any charting techniques. The rightmost “progress bars” are composed of a modified rectangle box and several smaller rectangles. The Trapezoidal end-caps are achieved by using the shape editor. Right-click the ungrouped object and choose “Make Editable” to define the midpoint and endpoints of the curves you need.</p>
+
+<p><img src="https://i.imgur.com/ZC8HKNC.png" alt="Click to Enlarge"></a></p>
+
+<p>To make the progress bar itself, I used several rectangular objects and used different colors and boarders to denote the active areas:</p>
+
+<p><img src="https://i.imgur.com/z22gsRD.png" alt="Click to Enlarge"></a></p>
+
+<p>Finally, I created a circle object and made exactly 100 small rectangles and arranged them in a circle. They were shaded according to the data. I then added another text bubble and annotated what it represented. </p>
+
+<p><img src="https://i.imgur.com/JAcKauo.png" alt="Click to Enlarge"></a></p>
+
+<p>Once each of the sections were complete, it was time to line them all up. The easiest method is to zoom all the way out, select each of the 4 groups, right click on one, and select <em>Align Objects</em> &gt; <em>Center</em>.</p>
+
+<p><img src="https://i.imgur.com/oisQEJJ.png" alt="Click to Enlarge"></a></p>
+
+<p>Here is the end result. I have provided the source file as well.</p>
+
+<center><p><a href="https://i.imgur.com/KjG4tWK.jpg">Image</a> | <a href="http://chrissardegna.com/blog/posts/keynote-data-vizualization/Visualization.pdf">PDF</a> | <a href="http://chrissardegna.com/blog/posts/keynote-data-vizualization/Visualization.key">Keynote</a></p></center>
+
+<p><img src="https://i.imgur.com/KjG4tWK.jpg" alt=“Click to Enlarge“></a></p>
+
+<p>Keynote allows for many different export options. Most importantly, it can export vectored PDFs with selectable text. This is great for sharing because you can then export images from Preview at any size.</p>
+
+<p><img src="https://i.imgur.com/6fHlFUy.png" alt=“Click to Enlarge“></a></p>
+
+<p>Prior to this project, I had no idea how powerful Keynote was in the field of data visualization. Moving forward, I think it is a powerful tool that would be silly to ignore. </p>
+
+<center><p>Discussion: <a href="https://www.reddit.com/r/dataisbeautiful/comments/44u18q/using_keynote_to_make_beautiful_data/">r/DataIsBeaitiful</a> | <a href="https://www.reddit.com/r/visualization/comments/44u76q/using_keynote_to_make_beautiful_data/">r/Vizualization</a> | <a href="https://news.ycombinator.com/item?id=11062248">YCombinator</a></p></center>

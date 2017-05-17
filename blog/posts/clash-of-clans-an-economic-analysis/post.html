@@ -1,0 +1,127 @@
+	<p>Or: How I made the CoCulator.</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/9ddc7gd6ncxa_small.png" alt="1-Im5dRNtQJ6Xbu84fE4Xlsw.png"></a>
+<em>My humble village.</em></p>
+
+<p>Clash of Clans has been a little obsession of mine over the last few years. The economy of this game always fascinated me, and I have finally found the time to analyze it. I will be providing the raw data and Excel workbooks for your entertainment throughout this post.</p>
+
+<h1>Part 1: Analysis</h1>
+
+<h2>Cost</h2>
+
+<p>The number one question I had before I began this project was what a fully maxed Town Hall 10 base would cost if one were to upgrade using only gems, i.e. the nominal value of a Clash of Clans base. This chart shows the cost to upgrade to the base level from the max of the previous base level:</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/gh2zmhmjmk0fgq_small.png" alt="1--9Y_dx0Ve5N_OnFrSZFnsg.png"></a></p>
+
+<p>With heroes, the growth rate becomes negative from Town Hall 9 to Town Hall 10. Without, it only slightly drops. This is because the cost addition of the Archer Queen at Town Hall 9 is so large: at Town Hall 9, the Queen can be upgraded from level 1 all the way to level 30, cumulatively costing 2,397,500 Dark Elixir. The cumulative cost from 31–40 is only 1,775,000. Thus, calculating them separately yields a slightly smoother curve:</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/gftwrrjtqbqotq_small.png" alt="1-7PIhOBQtYyTRV_pkwjvYVg.png"></a>
+Green line is actual data, blue line tracks the Pareto curve trend.</p>
+
+<p>The distribution we see is a example of a Pareto distribution: in this case, just over 80% of the upgrade cost falls under the last two Town Hall levels. You can view this data in this <a href="https://docs.google.com/spreadsheets/d/1BJYxvcVmBZ-yYylptIWkPzZc6HYpNwghWLIbg5RtL5Y/edit?usp=sharing" rel="nofollow">Google Sheet</a>. However, the charts aren’t as pretty.</p>
+
+<h2>Cost Progression</h2>
+
+<p>The buildings each have a respective cost that change quite a bit over time. I exported images of the chart below from the worksheet and compiled them as a gif. Note the changes to scale:</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/pesxl0b76lpo9w_small.gif" alt="1-UrgNz-KF22eWdUxq2L5EJA.gif"></a></p>
+
+<p>From Town Hall 1 to Town Hall 10. See <a href="http://makeagif.com/i/l818eq" rel="nofollow">.mp4</a> version here. Units: gold/elixir.</p>
+
+<p>Troops have a similar pattern, with the costs exponentially rising through the course of the game. Below are the charts for standard light and dark troops.</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/bm9qucnwpp0q_small.gif" alt="1-Tvz3cz4Hltm0lN99pOzkTA.gif"></a>
+Troop upgrades start at Town Hall 3, not Town Hall 1. <a href="http://makeagif.com/i/k6PX68" rel="nofollow">.mp4</a> available here. Units: elixir.</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/5aheszepxmsxbq_small.gif" alt="1-i3W5q_20NkQ0pDxAagDMbg.gif"></a>
+Dark troop upgrades start at Town Hall 7, not Town Hall 1. <a href="http://makeagif.com/i/A1dV3M" rel="nofollow">.mp4</a> available here. Units: dark elixir.</p>
+
+<p>The graph for Heroes does not show very much progression, as there are only 2 types and most of the upgrades are in the later levels. Here is the final chart for Town Hall 10 Heroes:</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/eivgugagy4e3g_small.png" alt="1-86tmZSnaRkOsuAk98v_1Lw.png"></a>
+Units: Units: dark elixir.</p>
+
+<p>As you can see, the Queen far outpaces the King.</p>
+
+<h2>Town Hall Upgrade Cost Calculator</h2>
+
+<p>The real reason for this post was my curiosity of what it would take me to fully upgrade my base. My spreadsheet can do this quite easily. Once I enter the data to the respective places (outlined below) the worksheet will give you your data. Here’s how mine looked:</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/zmgtozqvtpknw_small.png" alt="1-w_IX5z_XJ9Byb9AoRVrA1w.png"></a>
+Cost progression with columns U to AG hidden.</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/4mwtvwviaqeag_small.png" alt="1-o6oRoc2ZCTiKdn6ebqjIJw.png"></a>
+Cost progression summary with columns B to AF hidden.</p>
+
+<p>As you can see, it would cost me 572k gems or $4,086 to fully upgrade my base to Town Hall 9.</p>
+
+<p>All calculations are completed using <a href="http://reagentx.net/o/CoCulator.xlsx" rel="nofollow">this spreadsheet</a>. It is also hosted in this <a href="https://docs.google.com/spreadsheets/d/1IGBRtndf3uWC49Za9CoFyWJIpouIXWwJAsai8noQ0mY/edit?usp=sharing" rel="nofollow">Google Sheet</a>. The Google Sheet will do the math but cannot render the charts as far as I can tell.</p>
+
+<p>Happy CoCulating!</p>
+
+<h1>Part 2: Methodology</h1>
+
+<p>To make things as clear as possible, I want to explain my methods and document how my methods work for those who may wish to expand this research and manipulate the data. I also document the assumptions I’ve made to simplify some of the more complicated facets of this project.</p>
+
+<h2>Data Sources</h2>
+
+<p>All of the data I used came from the charts on the <a href="http://clashofclans.wikia.com/wiki/Clash_of_Clans_Wiki" rel="nofollow">Clash of Clans Wiki</a>. Each troop/building/spell has a small chart that I used to import into a large worksheet. Huge thanks to all of the hardworking people who contribute to the Wiki!</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/5xldeb6dhuhapg_small.png" alt="1-kAHZD-4AJ8ILm9ZqXFW4JQ.png"></a>
+Screenshot from <a href="http://clashofclans.wikia.com/wiki/Haste_Spell" rel="nofollow">http://clashofclans.wikia.com/wiki/Haste_Spell</a></p>
+
+<p>You can download the Excel worksheet <a href="http://reagentx.net/o/Raw%20Item%20Data%20CoC.xlsx" rel="nofollow">here</a> or view it in Google Sheets <a href="https://docs.google.com/spreadsheets/d/15iPSA__A8J6yCk4SD5IR4hMU2qUgIxu7wyiSdzDffcc/edit?usp=sharing" rel="nofollow">here</a>. I will be using this data source to make all of the calculations in the rest of the project. For this analysis, I only used the columns pertaining to the level, cost, and requirement columns. However, all of the data is in the table if you want to do your own experimentation.</p>
+
+<h2>Assumptions</h2>
+
+<ul>
+<li><p>The calculations assume that no wait times are expedited: only the cost of resources are calculated. I made this choice because buying resources is more efficient than buying time.</p></li>
+<li><p>Gem cost is located in <a href="https://docs.google.com/spreadsheets/d/1WYZHl60Yzt8N44kxcNlI-lIEnllUtSSMX6OOronSoec/edit?usp=sharing" rel="nofollow">this</a> Google Sheet and calculated as follows: </p> </li>
+</ul>
+<a href="http://img.svbtle.com/kof1qbjvejx9nq.png" rel="nofollow"><img src="https://d23f6h5jpj26xu.cloudfront.net/kof1qbjvejx9nq_small.png" alt="1-rItVdyefoyiKCQX7QOJFOw.png"></a>
+<ul>
+<li><p>When calculating the dollar cost, I assume purchasing of the 14,000 gem pack. I made this assumption because it is the cheapest option when buying lots of gems. Is it less realistic? Perhaps. It is, however, the most efficient in the long run.</p></li>
+<li><p>Calculations assume that you are upgrading to the maximum of your base’s capacity: if you enter “7” for your Town Hall level, it will calculate the costs to max all of your buildings to the Town Hall 7 limits. Thus, if you enter 1, it will calculate all the costs associated with maxing a level 1 Town Hall. Enter a higher level to calculate for a higher Town Hall. If you are level 6, entering 7 will calculate the cost to get from your current setup to a max level 7.</p></li>
+<li><p>Calculations are made only to max the levels of buildings: there are no partial calculations.</p></li>
+<li><p>Resources are assumed to have been bought directly from the building dialog itself, bypassing your collectors.</p></li>
+<li><p>Currency is USD. This can be easily changed in the Gem Cost Assumptions tab.</p></li>
+<li><p>No builder’s huts are purchased. Since we do not account for time, they are irrelevant. Time is infinite, resources are finite.</p></li>
+<li><p>Resources from your collectors are not used. Upgrading your collectors last using the all-gems method will make the amount of resources they generate a rounding error.</p></li>
+<li><p>Gems start at zero. You actually start at 500 and the game forces you to spend some, but I ignored this. By the time you get to the final Town Hall 10 count, 500 gems would be a rounding error anyway.</p></li>
+<li><p>Walls are upgraded with gold, not elixir, from level 8 onward. This doesn’t actually matter for the cost calculations (gold and elixir cost the same), but does mean some of the cost that can be split between the two resources is not displayed that way in my spreadsheet.</p></li>
+</ul>
+
+<h2>Data Inputs</h2>
+
+<p>This began as a project to calculate the upgrade cost (in gems and dollars) to max out my base. Thus, I needed to be able to input the current building data for my base.</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/5kk7t98lgd8gvq_small.png" alt="1-7I4rH14Spmx99tAi90iYgQ.png"></a>
+Organizational structure of the data-entering system.</p>
+
+<p>I created a column-based system to enter the level of each building: each row has a different building, followed by 7 columns used to enter the level of each building. It may take some time to get everything entered properly, but this is the simplest way to make the relevant calculations.</p>
+
+<p>I found the easiest way to do this was to put my village into edit mode, remove all of the pieces, and use the list of structures to enter the data into the fields.</p>
+
+<h2>Calculations</h2>
+
+<p>All calculations are done in <a href="http://reagentx.net/o/CoCulator.xlsx" rel="nofollow">this</a> spreadsheet. It is also hosted in this <a href="https://docs.google.com/spreadsheets/d/1IGBRtndf3uWC49Za9CoFyWJIpouIXWwJAsai8noQ0mY/edit?usp=sharing" rel="nofollow">Google Sheet</a>, but some formulas and charts are not supported.</p>
+
+<p><img src="https://d23f6h5jpj26xu.cloudfront.net/kgixktpdcoidqq_small.png" alt="1-bxAR4-e7XBS-nXQcsGl2nA.png"></a></p>
+
+<p>Each row corresponds to a row from the above data-entering system. Extra rows added in case additional buildings are added. Generally all columns except for “Calculation” are hidden.</p>
+
+<p>Finally, the fun part! There are many different calculations that go into this worksheet. Foremost, we must get the data from the correct column for the Town Hall level:</p>
+
+<pre><code>=IF(OR(ISNUMBER(B10,$Q10=B10),IFERROR(SUM(OFFSET(Tables!$A$75,MATCH($A10,Tables!$A$75:$A$106,0)-1,1,1,$Q10)),0),0)*P10</code></pre>
+
+<p>Then, we must calculate the cost of each individual building (up to 7 buildings):</p>
+
+<pre><code>=IF(OR(ISNUMBER(C10),$Q10=C10),IFERROR(SUM(OFFSET(Tables!$A$75,MATCH($A10,Tables!$A$75:$A$106,0)-1,C10+1,1,$Q10-C10)),0),0)</code></pre>
+
+<p>Once all of the individual building upgrade costs have been calculated, they are summed and pushed into charts. All of the calculations from this point are basic sums or other simple arithmetic.</p>
+
+<p>Now go forth with your newfound knowledge and Clash On!</p>
+
+<p><em>This post will be updated when the stats for the <a href="https://twitter.com/ClashofClans/status/657850190716628992" rel="nofollow">recently announced</a> Town Hall 11 (and it’s respective buildings) are released.</em></p>
+
+<center><p>Discussion: <a href="https://www.reddit.com/r/ClashOfClans/comments/3q2710/misc_clash_of_clans_an_economic_analysis_or_how_i/">r/ClashOfClans</a></p></center>
