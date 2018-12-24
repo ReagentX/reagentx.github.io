@@ -17,6 +17,8 @@ html,body{
 	width: 100%;
 	height: 100%;
 	font-family: 'SFNSTextLight', sans-serif;
+	align-items: center;
+	justify-content: center;
 
 }
 
@@ -256,7 +258,7 @@ to {
 	width: 100%;
 	z-index: -1;
 	opacity: 0.3;
-	background-image: url("https://source.unsplash.com/user/css/1400x800");
+	background-image: url("https://images.unsplash.com/photo-1423200451430-d0f4965ad4b4?ixlib=rb-0.3.5&s=3b2f66dc28cda812109ca497a3687af1&auto=format&fit=crop&w=1400&q=80");
  -webkit-background-size: cover;
 	-moz-background-size: cover;
 		-o-background-size: cover;
@@ -306,26 +308,58 @@ to {
 
 .name {
 	
+	font-size: 40px;
 	color: white;
-	font-family: 'SFNSTextLight', sans-serif;
-	font-size: 35px;
 	font-weight: 300;
-	letter-spacing: 2px;
+	font-style: italic;
 	text-align: center;
+	transform: rotate(-9deg); }
+		name span {
+			overflow: hidden;
+			display: block;
+			padding-right: 0; }
+			name span em {
+				display: block; }
+			name span:nth-child(1) {
+				color: #809fe1;
+				height: 24px;}
+			name span:nth-child(2) {
+				color: #1fc39e;
+				top: 25px;
+				height: 9px;
+				position: absolute;
+				left: 0;
+				right: 0; }
+				name span:nth-child(2) em {
+					margin-top: -25px; }
+			name span:nth-child(3) {
+				color: #DDAABB;
+				top: 35px;
+				height: 15px;
+				position: absolute;
+				left: 0;
+				right: 0; }
+				name span:nth-child(3) em {
+					margin-top: -35px; }
+			name a:hover span {
+			transition: transform 0.125s cubic-bezier(0.5, 0, 0.25, 2.5); }
+			name a:hover span:nth-child(1) {
+				transform: translateX(1vw); }
+			name a:hover span:nth-child(3) {
+				transform: translateX(-1vw); }
 
-}
 
 .profession {
  
 	color: white;
-	font-size: 18px;
+	font-size: 35px;
 	font-family: 'SFNSTextLight', sans-serif;
 	font-weight: 300;
-	letter-spacing: 3px;
-	margin-top: 18px;
+	letter-spacing: 2.5px;
+	margin-top: 20px;
 	text-align: center;
 	font-style: oblique;
-
+	transform: rotate(-9deg);
 }
 
 
@@ -346,9 +380,9 @@ nav{
 .tabs li a {
  
 	font-family: 'SFNSTextLight', sans-serif;
-	font-size: 17px;
+	font-size: 18px;
 	font-weight: 300;
-	letter-spacing: 4px;
+	letter-spacing: 3px;
 	text-align: center;
 	width: 100%;
 	color: white; 
@@ -1031,7 +1065,7 @@ button[type="submit"]:hover{
 	width: 100%;
 	z-index: -1;
 	opacity: 0.3;
-	background-image: url("https://source.unsplash.com/user/css/768x1300");
+	background-image: url("https://images.unsplash.com/photo-1423200451430-d0f4965ad4b4?ixlib=rb-0.3.5&s=3b2f66dc28cda812109ca497a3687af1&auto=format&w=768&h=1300&fit=crop&q=80");
  -webkit-background-size: cover;
 	-moz-background-size: cover;
 		-o-background-size: cover;
@@ -1048,10 +1082,9 @@ button[type="submit"]:hover{
 		left:10px;
 		background: rgba(25, 25, 25, 0.2);
 		border: 4px solid white;
-	 -webkit-border-image: -webkit-linear-gradient(135deg, #809fe1 -8%,#1fc39e 30%,#e3a1a1 90%);
-		-moz-border-image: -moz-linear-gradient(135deg, #809fe1 -8%,#1fc39e 30%,#e3a1a1 90%);
-			 border-image: linear-gradient(135deg, #809fe1 -8%,#1fc39e 30%,#e3a1a1 90%);
-			 border-image-slice: 1;
+		border-image: linear-gradient(135deg, #809fe1 -8%,#1fc39e 30%,#e3a1a1 90%);
+		border-image-slice: 1;
+		animation: border 10s linear infinite;
 	}
 
 	.navicon-button {
@@ -1238,5 +1271,21 @@ button[type="submit"]:hover{
 	.no-cssgradients .frame {
 		border: 3px solid #EA767B;
 	}
+	
+	@keyframes border {
+	0% {
+		background-position: 0 0; }
+
+	20% {
+		background-position: 100% 0; }
+
+	40% {
+		background-position: 100% 100%; }
+
+	60% {
+		background-position: 0 100%; }
+
+	100% {
+		background-position: 0 0; } }
 
 }
