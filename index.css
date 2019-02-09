@@ -1,3 +1,7 @@
+html { 
+    -webkit-text-size-adjust: none; 
+}
+
 body {
 	background-color: #21003e
 }
@@ -27,10 +31,6 @@ a {
 
 #b {
 	color: #ff0096;
-}
-
-#k {
-    	animation: change 1s;
 }
 
 #op{
