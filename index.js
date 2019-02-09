@@ -32,7 +32,6 @@ const Typer = {
     addSection()
     {
         const d = document.getElementById('console');
-        console.log(d);
         d.innerHTML += section;
     },
 
@@ -70,12 +69,20 @@ const Typer = {
             {
                 $('#console').html($('#console').html().substring(0, cont.length - 1));
             }
-            if (key.keyCode !== 8)
-            {
-                Typer.index += Typer.speed;
-            }
+            if (key.keyCode !== 8) { Typer.index += Typer.speed; }
             else if (Typer.index > 0) { Typer.index -= Typer.speed; }
-            const text = Typer.text.substring(0, Typer.index);
+
+            let current_char = Typer.text.substring(Typer.index - 1, Typer.index);
+            if (current_char === '%')
+            {
+                do
+                {
+                    Typer.index += 1;
+                    current_char = Typer.text.substring(Typer.index - 1, Typer.index);
+                } while (current_char !== '%');
+            }
+            let text = Typer.text.substring(0, Typer.index);
+            text = text.replace(/%/g, '');
             const rtn = new RegExp('\n', 'g');
             $('#console').html(text.replace(rtn, '<br/>'));
             window.scrollBy(0, 50);
@@ -104,13 +111,12 @@ const Typer = {
     },
 };
 
-Typer.speed = 3;
+Typer.speed = 1;  // Number of haracters to type at once
 Typer.file = 'chris.html';
 Typer.init();
-
 // Typer.addSection()
 
-const timer = setInterval('t();', 3);
+const timer = setInterval('t();', 25);
 function t()
 {
     Typer.addText({ keyCode: 123748 });
