@@ -50,7 +50,7 @@ const Typer = {
 
         else if (key.keyCode === 20)
         {
-            Typer.deniedCount++;
+            Typer.deniedCount += 1;
 
             if (Typer.deniedCount >= 3)
             {
@@ -67,16 +67,16 @@ const Typer = {
         {
             const cont = Typer.content();
             if (cont.substring(cont.length - 1, cont.length) === '|')
-            {$('#console').html($('#console').html().substring(0,cont.length - 1));}
+            {
+                $('#console').html($('#console').html().substring(0, cont.length - 1));
+            }
             if (key.keyCode !== 8)
             {
                 Typer.index += Typer.speed;
             }
-            else
-            if (Typer.index > 0) { Typer.index -= Typer.speed; }
+            else if (Typer.index > 0) { Typer.index -= Typer.speed; }
             const text = Typer.text.substring(0, Typer.index);
             const rtn = new RegExp('\n', 'g');
-
             $('#console').html(text.replace(rtn, '<br/>'));
             window.scrollBy(0, 50);
         }
@@ -86,7 +86,7 @@ const Typer = {
             key.preventDefault();
         }
 
-        if (key.keyCode != 122)
+        if (key.keyCode !== 122)
         { // otherway prevent keys default behavior
             key.returnValue = false;
         }
@@ -97,27 +97,12 @@ const Typer = {
         const cont = this.content();
 
         if (cont.substring(cont.length - 1, cont.length) === '|')
-        {$('#console').html($('#console').html().substring(0,cont.length - 1));}
-
-        else
-        { this.write('|'); } // else write it
+        {
+            $('#console').html($('#console').html().substring(0, cont.length - 1));
+        }
+        else { this.write('|'); } // else write it
     },
 };
-
-function replaceUrls (text)
-{
-    const http = text.indexOf('http://');
-    const space = text.indexOf('.me ', http);
-
-    if (space !== -1)
-    {
-        const url = text.slice(http, space - 1);
-        return text.replace(url, '<a href="' + url + '">' + url + '</a>');
-    }
-
-
-    return text;
-}
 
 Typer.speed = 3;
 Typer.file = 'chris.html';
