@@ -5,13 +5,13 @@ const Typer = {
     text: null,
     accessCountimer: null,
     index: 0,
-    speed: 2,
+    speed: 1,
     file: '',
     accessCount: 0,
     deniedCount: 0,
     init()
     {
-        // accessCountimer=setInterval(function(){Typer.updLstChr();},500);
+        // Typer.accessCountimer = setInterval(() => { Typer.updLstChr(); }, 500);
         $.get(Typer.file, (data) => {
             Typer.text = data;
             Typer.text = Typer.text.slice(0, Typer.text.length - 1);
@@ -37,32 +37,7 @@ const Typer = {
 
     addText(key)
     {
-        if (key.keyCode === 18)
-        {
-            Typer.accessCount += 1;
-
-            if (Typer.accessCount >= 3)
-            {
-                Typer.makeAccess();
-            }
-        }
-
-        else if (key.keyCode === 20)
-        {
-            Typer.deniedCount += 1;
-
-            if (Typer.deniedCount >= 3)
-            {
-                Typer.makeDenied();
-            }
-        }
-
-        else if (key.keyCode === 27)
-        {
-            Typer.hidepop();
-        }
-
-        else if (Typer.text)
+        if (Typer.text)
         {
             const cont = Typer.content();
             if (cont.substring(cont.length - 1, cont.length) === '|')
@@ -87,16 +62,6 @@ const Typer = {
             $('#console').html(text.replace(rtn, '<br/>'));
             window.scrollBy(0, 50);
         }
-
-        if (key.preventDefault && key.keyCode !== 122)
-        {
-            key.preventDefault();
-        }
-
-        if (key.keyCode !== 122)
-        { // otherway prevent keys default behavior
-            key.returnValue = false;
-        }
     },
 
     updLstChr()
@@ -111,12 +76,12 @@ const Typer = {
     },
 };
 
-Typer.speed = 1;  // Number of haracters to type at once
+Typer.speed = 1; // Number of haracters to type at once
 Typer.file = 'chris.html';
 Typer.init();
 // Typer.addSection()
 
-const timer = setInterval('t();', 25);
+const timer = setInterval('t();', 30);
 function t()
 {
     Typer.addText({ keyCode: 123748 });
