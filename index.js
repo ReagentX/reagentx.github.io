@@ -1,6 +1,3 @@
-const section = '<div id="section"><span id="prompt"></span><span id="command"></span></div>';
-
-
 const Typer = {
     text: null,
     accessCountimer: null,
