@@ -13,11 +13,12 @@ body {
 	margin-left:1vw;
 	margin-right:1vw;
 	margin-top:5vh;
+	margin-bottom:5vh;
 	font-size:14px;
 }
 
 a {
-	color: #0bc;
+	color: #00ff9f;
 	text-decoration: none;
 }
 
