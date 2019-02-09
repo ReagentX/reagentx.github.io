@@ -1,0 +1,38 @@
+body {
+	background-color: #21003e
+}
+
+#console {
+	font-family: courier, monospace;
+	color: #fff;
+	max-width:650px;
+	margin-left:1vw;
+	margin-right:1vw;
+	margin-top:5vh;
+	font-size:14px;
+}
+
+a {
+	color: #0bc;
+	text-decoration: none;
+}
+
+#a {
+	color: #00E4E6;
+}
+
+#c {
+	color: #FFF700;
+}
+
+#b {
+	color: #ff0096;
+}
+
+#k {
+    	animation: change 1s;
+}
+
+#op{
+    	color: #888888
+}
