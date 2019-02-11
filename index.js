@@ -57,7 +57,6 @@ const Typer = {
             text = text.replace(/%/g, '');
             const rtn = new RegExp('\n', 'g');
             $('#console').html(text.replace(rtn, '<br/>'));
-            window.scrollBy(0, 50);
         }
     },
 
