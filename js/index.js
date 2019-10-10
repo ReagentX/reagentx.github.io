@@ -93,7 +93,7 @@ const content =
 {
     'terminal': 'content/terminal.html',
     'content': 'content/content.html',
-    'blog': 'content/blog.html'
+    'blog': 'content/posts.json'
 }
 
 const activate = (id) =>
@@ -106,9 +106,21 @@ const activate = (id) =>
     }
     document.getElementById(id).classList.add('active');
 
-    let text;
-    $.get(content[id], (data) => {
-        text = data;
-        $('#console').html(text)
-    });
+    if (id === 'blog') 
+    {
+        $.getJSON(content[id], function(posts) 
+        {
+            html = '<h1>Blogroll</h1>'
+            posts.forEach(post => {
+                html += `<p>${post.date} <a href="${post.slug}">${post.title}</a></p>`
+            });
+            $('#console').html(html)
+        });
+    } 
+    else 
+    {
+        $.get(content[id], (data) => {
+            $('#console').html(data)
+        });
+    }
 }
