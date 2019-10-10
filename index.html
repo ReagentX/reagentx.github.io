@@ -12,8 +12,31 @@
     <link rel="shortcut icon" href="favicon.ico">
   </head>
   <body>
-      <div class="console console0" augmented-ui="tl-clip-x r-clip-y bl-clip-y exe">
+    <div class="container">
+      <div class="buttons">
+        <div class="button active"
+             id="terminal"
+             augmented-ui="tl-clip-x r-clip-y bl-clip-y exe"
+             onclick="activate('terminal');">
+          <p>Terminal</p>
+        </div>
+        <div class="button"
+             id="content"
+             augmented-ui="tl-clip-x r-clip-y bl-clip-y exe"
+             onclick="activate('content');">
+          <p>Rendered Content</p>
+        </div>
+        <div class="button"
+             id="blog"
+             augmented-ui="tl-clip-x r-clip-y bl-clip-y exe"
+             onclick="activate('blog');">
+          <p>Blog</p>
+        </div>
+      </div>
+      <div class="consoleWindow consoleWindow0"
+           augmented-ui="tl-clip-x r-clip-y bl-clip-y exe">
         <div id="console"></div>
       </div>
+    </div>
   </body> 
 </html> 
