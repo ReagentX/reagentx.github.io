@@ -7,6 +7,12 @@ body {
 	text-shadow: 0 0 5px rgb(0, 136, 7);
 }
 
+div.container {
+	max-width: 750px;
+	margin-left: auto;
+    margin-right: auto;
+}
+
 a {
 	color: #00ff9f;
 	text-decoration: none;
