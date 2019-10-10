@@ -1,3 +1,26 @@
+#console {
+	font-family: courier, monospace;
+	color: #fff;
+	max-width:650px;
+	min-height: 750px;
+	margin-left:1vw;
+	margin-right:1vw;
+	margin-top:5vh;
+	margin-bottom:5vh;
+	font-size:14px;
+}
+
+#console::after {
+	content: "";
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: repeating-linear-gradient(0deg, rgba(100, 100, 100, 0.15), rgba(100, 100, 100, 0.15) 1px, transparent 3px, transparent 4px);
+	pointer-events: none;
+  }
+
 div.console {
     max-width: 650px;
     margin-left: auto;
@@ -5,9 +28,10 @@ div.console {
     --aug-border: 5px;
     --aug-inset: 5px;
     padding: 10px; /* mind the gap */
-    --aug-border-bg: #5C5800;
+    --aug-border-bg: #cc0479;
     --aug-inset-bg: #32005E;
 }
+
 div.console0 {
     --aug-border: 8px;
 }
