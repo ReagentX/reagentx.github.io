@@ -2,13 +2,14 @@
 	font-family: courier, monospace;
     color: #fff;
     max-width: 750px;
-	min-height: 750px;
+	min-height: 700px;
 	margin-left: 1vw;
 	margin-right: 1vw;
-	margin-top: 5vh;
-	margin-bottom: 5vh;
+	margin-top: 3vh;
+	margin-bottom: 3vh;
     font-size: 14px;
-    /* overflow:  auto; */
+    padding-left: 2vw;
+    padding-right: 1vw;
 }
 
 #console::after {
@@ -29,7 +30,7 @@ div.buttons {
 }
 
 div.button {
-    font-family: 'Arial Narrow Bold', sans-serif;
+    font-family: Roboto, 'Courier New', Courier, monospace;
     font-size: 16px;
     display: inline-block;
     vertical-align: top;

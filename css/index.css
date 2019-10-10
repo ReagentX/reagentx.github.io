@@ -18,6 +18,10 @@ a {
 	text-decoration: none;
 }
 
+ul {
+	padding-left: 3vw;
+}
+
 #a {
 	color: #00E4E6;
 }
