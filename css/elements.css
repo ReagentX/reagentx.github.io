@@ -1,0 +1,14 @@
+div.console {
+    display: inline-block;
+    max-width: 800px;
+    min-width: 600px;
+    margin: 10px;
+    --aug-border: 5px;
+    --aug-inset: 5px;
+    padding: 10px; /* mind the gap */
+    --aug-border-bg: purple;
+    --aug-inset-bg: purple;
+}
+div.console0 {
+    --aug-border: 4px;
+}
