@@ -88,3 +88,25 @@ function t()
         clearInterval(timer);
     }
 }
+
+const content = 
+{
+    'terminal': 'chris.html',
+    'content': 'rendered.html',
+    'blog': 'blog.html'
+}
+
+const activate = (id) =>
+{
+    console.log
+    buttons = document.getElementsByClassName('button');
+    for (const button of buttons) 
+    {
+        button.classList.remove('active');
+    }
+    document.getElementById(id).classList.add('active');
+
+    console.log(content[id])
+    console.log($.get(content[id]))
+    $('#console').html($.get(content[id]))
+}
