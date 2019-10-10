@@ -109,7 +109,6 @@ const activate = (id) =>
     let text;
     $.get(content[id], (data) => {
         text = data;
-        console.log(text)
         $('#console').html(text)
     });
 }
