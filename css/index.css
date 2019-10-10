@@ -7,29 +7,6 @@ body {
 	text-shadow: 0 0 5px rgb(0, 136, 7);
 }
 
-#console {
-	font-family: courier, monospace;
-	color: #fff;
-	max-width:650px;
-	min-height: 750px;
-	margin-left:1vw;
-	margin-right:1vw;
-	margin-top:5vh;
-	margin-bottom:5vh;
-	font-size:14px;
-}
-
-#console::after {
-	content: "";
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100vw;
-	height: 100vh;
-	background: repeating-linear-gradient(0deg, rgba(100, 100, 100, 0.15), rgba(100, 100, 100, 0.15) 1px, transparent 3px, transparent 4px);
-	pointer-events: none;
-  }
-
 a {
 	color: #00ff9f;
 	text-decoration: none;

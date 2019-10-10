@@ -1,13 +1,14 @@
 #console {
 	font-family: courier, monospace;
 	color: #fff;
-	max-width:650px;
+    max-width: 650px;
 	min-height: 750px;
-	margin-left:1vw;
-	margin-right:1vw;
-	margin-top:5vh;
-	margin-bottom:5vh;
-	font-size:14px;
+	margin-left: 1vw;
+	margin-right: 1vw;
+	margin-top: 5vh;
+	margin-bottom: 5vh;
+    font-size: 14px;
+    /* overflow:  auto; */
 }
 
 #console::after {
