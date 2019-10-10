@@ -58,6 +58,7 @@ const Typer = {
             const rtn = new RegExp('\n', 'g');
             $('#console').html(text.replace(rtn, '<br/>'));
             // Typer.updLstChr()
+            console.log('typing')
         }
     },
 
@@ -83,7 +84,7 @@ function t()
 {
     Typer.addText({ keyCode: 123748 });
 
-    if (Typer.text & Typer.index > Typer.text.length)
+    if (Typer.index >= Typer.text.length)
     {
         clearInterval(timer);
     }
