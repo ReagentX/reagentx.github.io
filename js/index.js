@@ -57,18 +57,19 @@ const Typer = {
             text = text.replace(/%/g, '');
             const rtn = new RegExp('\n', 'g');
             $('#console').html(text.replace(rtn, '<br/>'));
+            // Typer.updLstChr()
         }
     },
 
     updLstChr()
     {
         const cont = this.content();
-
-        if (cont.substring(cont.length - 1, cont.length) === '|')
+        if (cont.substring(cont.length - 1, cont.length) === '_')
         {
+            console.log('adding')
             $('#console').html($('#console').html().substring(0, cont.length - 1));
         }
-        else { this.write('|'); } // else write it
+        else { $('#console').html($('#console').html() += '_') }
     },
 };
 
