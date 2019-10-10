@@ -2,13 +2,39 @@
   <head> 
     <title>Christopher Sardegna</title> 
     <script type="text/javascript" src="jquery.js"></script> 
-    <script type="text/javascript" src="index.js"> </script> 
+    <script type="text/javascript" src="index.js"></script>
+    <script type="text/javascript" src="/aug-attr-spliced.js"></script>
+    <link rel="stylesheet" type="text/css" href="augmented.css">
     <link rel="stylesheet" type="text/css" href="index.css">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1">
     <meta property="og:title" content="Christopher Sardegna" />
     <link rel="shortcut icon" href="favicon.ico">
-  </head> 
-  <body> 
-    <div id="console"></div> 
+  </head>
+  <style>
+      div.demo {
+          display: inline-block;
+          max-width: 800px;
+          min-width: 600px;
+          /* height: 110px; */
+          margin: 10px;
+          --aug-border: 5px;
+          --aug-inset: 5px;
+          padding: 10px; /* mind the gap */
+          /* text-align: center; */
+          --aug-border-bg: gold;
+          --aug-inset-bg: gold;
+      }
+      div.demo0 {
+          --aug-border: 4px;
+      }
+  
+      div.demo1 {
+          --aug-border: 8px;
+      }
+  </style>
+  <body>
+      <div class="demo demo0" augmented-ui="tl-clip br-clip exe">
+        <div id="console"></div>
+      </div>
   </body> 
 </html> 
