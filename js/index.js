@@ -91,14 +91,14 @@ function t()
 
 const content = 
 {
-    'terminal': 'chris.html',
-    'content': 'rendered.html',
+    'terminal': 'test.html',
+    'content': 'content.html',
     'blog': 'blog.html'
 }
 
 const activate = (id) =>
 {
-    console.log
+    clearInterval(timer);
     buttons = document.getElementsByClassName('button');
     for (const button of buttons) 
     {
@@ -106,7 +106,10 @@ const activate = (id) =>
     }
     document.getElementById(id).classList.add('active');
 
-    console.log(content[id])
-    console.log($.get(content[id]))
-    $('#console').html($.get(content[id]))
+    let text;
+    $.get(content[id], (data) => {
+        text = data;
+        console.log(text)
+        $('#console').html(text)
+    });
 }
