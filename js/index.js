@@ -57,23 +57,24 @@ const Typer = {
             text = text.replace(/%/g, '');
             const rtn = new RegExp('\n', 'g');
             $('#console').html(text.replace(rtn, '<br/>'));
+            // Typer.updLstChr()
         }
     },
 
     updLstChr()
     {
         const cont = this.content();
-
-        if (cont.substring(cont.length - 1, cont.length) === '|')
+        if (cont.substring(cont.length - 1, cont.length) === '_')
         {
+            console.log('adding')
             $('#console').html($('#console').html().substring(0, cont.length - 1));
         }
-        else { this.write('|'); } // else write it
+        else { $('#console').html($('#console').html() += '_') }
     },
 };
 
 Typer.speed = 1; // Number of haracters to type at once
-Typer.file = 'chris.html';
+Typer.file = 'content/chris.html';
 Typer.init();
 // Typer.addSection()
 
@@ -82,8 +83,32 @@ function t()
 {
     Typer.addText({ keyCode: 123748 });
 
-    if (Typer.index > Typer.text.length)
+    if (Typer.text & Typer.index > Typer.text.length)
     {
         clearInterval(timer);
     }
+}
+
+const content = 
+{
+    'terminal': 'content/terminal.html',
+    'content': 'content/content.html',
+    'blog': 'content/blog.html'
+}
+
+const activate = (id) =>
+{
+    clearInterval(timer);
+    buttons = document.getElementsByClassName('button');
+    for (const button of buttons) 
+    {
+        button.classList.remove('active');
+    }
+    document.getElementById(id).classList.add('active');
+
+    let text;
+    $.get(content[id], (data) => {
+        text = data;
+        $('#console').html(text)
+    });
 }

@@ -1,0 +1,71 @@
+#console {
+	font-family: courier, monospace;
+    color: #fff;
+    max-width: 750px;
+	min-height: 700px;
+	margin-left: 1vw;
+	margin-right: 1vw;
+	margin-top: 3vh;
+	margin-bottom: 3vh;
+    font-size: 14px;
+    padding-left: 2vw;
+    padding-right: 1vw;
+}
+
+#console::after {
+	content: "";
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: repeating-linear-gradient(0deg, rgba(100, 100, 100, 0.15), rgba(100, 100, 100, 0.15) 1px, transparent 3px, transparent 4px);
+	pointer-events: none;
+  }
+
+div.buttons {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+}
+
+div.button {
+    font-family: Courier, monospace;
+    font-size: 16px;
+    display: inline-block;
+    vertical-align: top;
+    width: 50%;
+	margin-top: 1vh;
+	margin-bottom: 1vh;
+    --aug-border: 5px;
+    --aug-inset: 5px;
+    padding: 10px; /* mind the gap */
+    --aug-border-bg: #cc0479;
+    --aug-inset-bg: #32005E;
+    text-align: center;
+    color: #fff;
+    /* position: relative; */
+}
+
+div.button:hover {
+    --aug-border-bg: #E7B700;
+}
+
+div.active {
+    --aug-border-bg: #82AF00;
+}
+
+div.consoleWindow {
+    max-width: 750px;
+    margin-left: auto;
+    margin-right: auto;
+    --aug-border: 5px;
+    --aug-inset: 5px;
+    padding: 10px; /* mind the gap */
+    --aug-border-bg: #cc0479;
+    --aug-inset-bg: #32005E;
+}
+
+div.consoleWindow0 {
+    --aug-border: 8px;
+}

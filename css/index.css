@@ -1,0 +1,43 @@
+html { 
+    -webkit-text-size-adjust: none; 
+}
+
+body {
+	background-color: #21003e;
+	text-shadow: 0 0 5px rgb(0, 136, 7);
+}
+
+div.container {
+	max-width: 750px;
+	margin-left: auto;
+    margin-right: auto;
+}
+
+a {
+	color: #00ff9f;
+	text-decoration: none;
+}
+
+ul {
+	padding-left: 3vw;
+}
+
+#a {
+	color: #00E4E6;
+}
+
+#c {
+	color: #FFF700;
+}
+
+#b {
+	color: #ff0096;
+}
+
+#h {
+	color: #FFFC57
+}
+
+#op{
+    color: #888888
+}
