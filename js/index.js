@@ -74,7 +74,7 @@ const Typer = {
 };
 
 Typer.speed = 1; // Number of haracters to type at once
-Typer.file = 'chris.html';
+Typer.file = 'content/chris.html';
 Typer.init();
 // Typer.addSection()
 
@@ -91,9 +91,9 @@ function t()
 
 const content = 
 {
-    'terminal': 'test.html',
-    'content': 'content.html',
-    'blog': 'blog.html'
+    'terminal': 'content/terminal.html',
+    'content': 'content/content.html',
+    'blog': 'content/blog.html'
 }
 
 const activate = (id) =>
