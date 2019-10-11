@@ -11,6 +11,7 @@
     padding-left: 2vw;
     padding-right: 1vw;
     overflow: scroll;
+    scrollbar-width: none;
 }
 
 #console::after {

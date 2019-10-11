@@ -5,13 +5,25 @@ html {
 body {
 	background-color: #21003e;
 	text-shadow: 0 0 5px rgb(0, 136, 7);
+	scrollbar-width: none;
+	overflow: -moz-scrollbars-none;
+}
+
+html {
+    overflow: scroll;
+	overflow-x: hidden;
+	scrollbar-width: none;
+}
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
 }
 
 div.container {
 	max-width: 750px;
 	margin-left: auto;
 	margin-right: auto;
-	height: 100vh;
+	height: 100%;
     overflow: auto;
 }
 
