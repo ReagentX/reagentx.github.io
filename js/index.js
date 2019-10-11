@@ -58,7 +58,6 @@ const Typer = {
             const rtn = new RegExp('\n', 'g');
             $('#console').html(text.replace(rtn, '<br/>'));
             // Typer.updLstChr()
-            console.log('typing')
         }
     },
 
