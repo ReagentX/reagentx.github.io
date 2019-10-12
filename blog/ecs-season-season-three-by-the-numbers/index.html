@@ -1,0 +1,422 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">May 20, 2017</time>
+<title>Visualizing ECS Season 3: By The Numbers</title>
+<h1 class="article_title">Visualizing ECS Season 3: By The Numbers</h1>
+<div class="TOC">
+<ul>
+<li><a href="#preparing-the-data">Preparing the Data</a>
+
+<ul>
+<li><a href="#importing-to-excel">Importing to Excel</a>
+
+<ul>
+<li><a href="#cleaning-the-names">Cleaning the Names</a></li>
+</ul></li>
+<li><a href="#determining-weapon-preference">Determining Weapon Preference</a>
+
+<ul>
+<li><a href="#building-a-lookup-table">Building a Lookup Table</a></li>
+<li><a href="#building-the-pivottable">Building the PivotTable</a>
+
+<ul>
+<li><a href="#hacking-the-pivottable">Hacking the PivotTable</a></li>
+</ul></li>
+<li><a href="#matching-players">Matching Players</a></li>
+</ul></li>
+<li><a href="#determining-team-location">Determining Team Location</a></li>
+</ul></li>
+<li><a href="#analysis-and-visualization">Analysis and Visualization</a>
+
+<ul>
+<li><a href="#data-available-to-analyze">Data Available to Analyze</a></li>
+<li><a href="#player-stats-by-team">Player Stats by Team</a></li>
+<li><a href="#kd-versus-hltv-rating">K/D versus HLTV Rating</a></li>
+<li><a href="#trade-kills-versus-trade-deaths">Trade Kills versus Trade Deaths</a></li>
+<li><a href="#entry-kills-versus-entry-holds">Entry Kills versus Entry Holds</a></li>
+<li><a href="#player-multi-kills">Player Multi-kills</a></li>
+<li><a href="#player-clutches-by-team">Player Clutches by Team</a></li>
+</ul></li>
+<li><a href="#summary">Summary</a>
+
+<ul>
+<li><a href="#raw-data">Raw Data</a></li>
+<li><a href="#disclosure-and-notes">Disclosure and Notes</a></li>
+<li><a href="#tableau">Tableau</a></li>
+</ul></li>
+</ul>
+</div>
+
+<p>Visualizing player performance in Counter-Strike: Global Offensive is simple to do if one leverages the proper tools. Professional players are a useful baseline to use these tools since they generally play with and against the opponents of similar expertise, thus comparisons are meaningful. </p>
+
+<p>This article focusses on both <strong>methodology</strong> and <strong>analysis</strong>.<sup><a href="#fn1-14869" id="fnr1-14869" title="see footnote" class="footnote">1</a></sup> If reading about Excel formulas and analytical tools seems disinteresting, skip to the analysis and visualization section from the Table of Contents above.</p>
+
+<p>All of the data associated with this project is attached at the bottom, along with sources and other pertinent disclosures.</p>
+
+<h1 id="preparing-the-data">Preparing the Data</h1>
+
+<p>EC Season 3 is divided into two events: a <a href="http://www.hltv.org/?pageid=216&amp;eventid=2729">North American Event</a> and a <a href="http://www.hltv.org/?pageid=216&amp;eventid=2728">European Event</a>. As of week 5, 110 players across 20 teams competed in 112 matches. This leaves us with a rather large sample size and several inserting ways to sort players. Not only can we sort players by team but also by region. Further, using various modeling tools, we can determine an even greater level of detail about how players have been performing so far during the third season of ECS.</p>
+
+<figure>
+<img src="img/hltvdemolist.png" alt="" />
+</figure>
+
+<p>Source material must be acquired to begin any analysis. HLTV is the best source for professional match data as they host nearly every demo file for every professional competition. To quickly download large volumes of demos, leverage my <a href="https://chrissardegna.com/blog/posts/using-python-download-hltv-demos/">Demo Downloader script</a>, written in Python.</p>
+
+<h2 id="importing-to-excel">Importing to Excel</h2>
+
+<p>Once we have the demo files, it is simple to roll them into Excel. Valve has an open source library made for analyzing CS:GO demos called <a href="https://github.com/ValveSoftware/csgo-demoinfo">csgo-demoinfo</a> written in C# that may other open-source solutions are based on. <a href="https://github.com/akiver/CSGO-Demos-Manager/">CSGO-Demos-Manager</a> is a well-designed open-source solution<sup><a href="#fn2-14869" id="fnr2-14869" title="see footnote" class="footnote">2</a></sup> that makes it simple to analyze demos and dump the data to Excel.</p>
+
+<h3 id="cleaning-the-names">Cleaning the Names</h3>
+
+<p>One downside of non-Valve tournaments is that players use non-standard names<sup><a href="#fn3-14869" id="fnr3-14869" title="see footnote" class="footnote">3</a></sup>. To filter spam out of the names, it is best to rename them manually on the <code>Players</code> sheet. Since players’ Steam IDs are listed here as well, we can make these revised names flow through to other sheets by looking them up based on the unchanging Steam ID.</p>
+
+<p>The primary place names need replacing is the <code>Kills</code> sheet. Create two new columns: <code>Killer Name Corrected</code> and <code>Killed Name Corrected</code>. Both of these will use <code>INDEX MATCH</code><sup><a href="#fn4-14869" id="fnr4-14869" title="see footnote" class="footnote">4</a></sup> formulas to bring the corrected names in:</p>
+
+<pre><code>=INDEX(PlayerNames,MATCH(E2,SteamIDs,0))
+</code></pre>
+
+<p>Where <code>E2</code> is the reference to the Steam ID of the individual on the <code>Kills</code> sheet, and <code>PlayerNames</code> and <code>SteamIDs</code> are named ranges on the <code>Players</code> sheet where the original corrected names are.</p>
+
+<p>Occasionally players will play under more than one Steam ID.<sup><a href="#fn5-14869" id="fnr5-14869" title="see footnote" class="footnote">5</a></sup> Because of this, some statistics will need to be calculated manually since there is no way currently for CSGO-Demos-Manager to calculate data for a single player with more than one Steam ID.</p>
+
+<h2 id="determining-weapon-preference">Determining Weapon Preference</h2>
+
+<p>Since weapons are generally used positionally and situationally, <a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/AWPEntryAnalysis/AWPEntryHoldKillAnalysis">especially AWPs</a>, it is important to be able to filter on whether a player prefers to use a sniper or not. To accomplish this, we can leverage the <code>Kills</code> sheet from the CSGO-Demos-Manager export. </p>
+
+<h3 id="building-a-lookup-table">Building a Lookup Table</h3>
+
+<p>First, create a lookup table to determine the weapon type to aggregate different types of kills. This can easily be accomplished on the <code>Weapons</code> sheet since it already has a list of all of the weapons. <a href="https://docs.google.com/spreadsheets/d/1nQrkzWKh3hTgfl1Mmy2yo6reWQxXEtjpMycLzZwYXKI/edit?usp=sharing">Here</a> is what the table should look like. Next, use <code>INDEX MATCH</code> to bring that into the <code>Kills</code> sheet so that we can sort not just on the specific weapon but also on weapon type. Add this formula after the <code>Weapon</code> column:</p>
+
+<pre><code>=INDEX(WeaponType,MATCH(R9,WeaponName,0))
+</code></pre>
+
+<h3 id="building-the-pivottable">Building the PivotTable</h3>
+
+<p>From here we can make a PivotTable to summarize which weapon type players prefer. Create a PivotTable from the <code>Kills</code> sheet. This PivotTable will use the following construction:</p>
+
+<figure>
+<img src="img/sniperpivot.png" alt="" />
+</figure>
+
+<h4 id="hacking-the-pivottable">Hacking the PivotTable</h4>
+
+<p>Once filter on the column labels <code>Rifle</code> and <code>Sniper</code> this PivotTable shows which preference players have. To codify this as a variable, we need to extract this information. This is most easily accomplished by using a pesky <code>=GETPIVOTDATA</code> trick. First, copy the list of names to the left of the table. Then, use </p>
+
+<pre><code>=IF(GETPIVOTDATA(&quot;Weapon Type&quot;,$B$3,&quot;Killer Name Corrected&quot;,A5,&quot;Weapon Type&quot;,&quot;Rifle&quot;)&gt;GETPIVOTDATA(&quot;Weapon Type&quot;,$B$3,&quot;Killer Name Corrected&quot;,A5,&quot;Weapon Type&quot;,&quot;Sniper&quot;),&quot;Rifler&quot;,&quot;Sniper&quot;)    
+</code></pre>
+
+<p>Where <code>$B$3</code> is the PivotTable reference and <code>A5</code> is the reference to the name we pasted. This formula returns <code>Rifler</code> if the player has more rifle kills than sniper kills or <code>Sniper</code> when the reverse is true. The table should now look like this:</p>
+
+<figure>
+<img src="img/sniperpivot2.png" alt="" />
+</figure>
+
+<h3 id="matching-players">Matching Players</h3>
+
+<p>Finally, create a new column on the <code>Players</code> sheet and use <code>INDEX MATCH</code> on the the player names to bring in the weapon preference:</p>
+
+<pre><code>=INDEX(WeaponPreference,MATCH(A2,SniperLookupName,0))
+</code></pre>
+
+<p>Where <code>A2</code> is a reference to the player name on the <code>Players</code> sheet and <code>WeaponPreference</code> and <code>SniperLookupName</code> are named ranges from the Sniper lookup PivotTable made earlier.</p>
+
+<h2 id="determining-team-location">Determining Team Location</h2>
+
+<p>Because there are technically two tournaments–North American and European–distinguishing the two is important. This can easily be accomplished with another lookup table of the team name and the location. One is prepared in <a href="https://docs.google.com/spreadsheets/d/1GxH0YDwhdfACzH-CLA-C56Rn5EAKO3i517zxEATLl6M/edit?usp=sharing">this Google Sheet</a>.</p>
+
+<p>Once this is imported to the Excel document, it is simple to add another column on the <code>Players</code> sheet that brings this information in:</p>
+
+<pre><code>=INDEX(Country,MATCH(C2,TeamName,0))
+</code></pre>
+
+<p>Where <code>C2</code> is a reference to the team name on the <code>Players</code> sheet and <code>Country</code> and <code>TeamName</code> are named ranges on the country lookup table.</p>
+
+<h1 id="analysis-and-visualization">Analysis and Visualization</h1>
+
+<p>Once the data is clean, we can begin analyzing it. This analysis mainly focusses on player performance, so the following charts will all stem from the <code>Players</code> sheet.</p>
+
+<h2 id="data-available-to-analyze">Data Available to Analyze</h2>
+
+<p>The <code>Player</code> Excel export contains a plethora of data related to individual performance. Rating, K/D, HS%, ADR, APR, DPR, ADR, and many other variables are calculated here. </p>
+
+<p>Since we added columns for country and weapon preference, we can see how the above variables are influenced by including or excluding certain groups. Since players are also tagged with the team, they played for we can also sort by team<sup><a href="#fn6-14869" id="fnr6-14869" title="see footnote" class="footnote">6</a></sup>.</p>
+
+<h2 id="player-stats-by-team">Player Stats by Team</h2>
+
+<p>This table demonstrates the variance in impact that players have on their teams’ success. Teams, sorted by descending average rating<sup><a href="#fn7-14869" id="fnr7-14869" title="see footnote" class="footnote">7</a></sup> and broken down by player categorize the data. The shaded area behind each team’s players represents the difference between the least and most impactful player, thus a team of similarly-skilled players will have smaller variance,</p>
+
+<figure>
+<img src="img/statsbyteam.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>Interestingly, FaZe Clan, the highest-rated team, has the highest variance between their players across nearly every measure: they have the highest variance in terms of rating, K/d, KPR, ADR, and HS%. Niko leads his team in nearly every attribute.</p>
+
+<figure>
+<img src="img/fazevar.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>At the bottom of the pack, Dignitas and Ghost trail. This is likely because they are both constantly trading players and searching for a cohesive team s they have obviously not yet found one.</p>
+
+<h2 id="kd-versus-hltv-rating">K/D versus HLTV Rating</h2>
+
+<p>The generally positive correlation between these two variables demonstrates where the <a href="http://www.hltv.org/?pageid=242&amp;eventid=0">HLTV Rating</a> breaks from the kill/death ratio.</p>
+
+<figure>
+<img src="img/ratingkd.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/KDVersusRating">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>Most players cluster around a 0.97 rating and a 0.992 K/D ratio, which makes sense seeing that K/D is a zero-sum game: for a player to gain, another must lose.</p>
+
+<p>Riflers like niko and rain are far above the pack with their respective ratings of <code>1.48</code> and <code>1.38</code>. Trailing are players like pita and Pimp, with respective ratings of <code>0.66</code> and <code>0.67</code>.</p>
+
+<p>On the AWP side of things, kennyS leads the pack with a rating of <code>1.29</code>. Maikelele trails the pack with an abysmal <code>0.57</code> rating, the lowest of any player in this tournament.</p>
+
+<figure>
+<img src="img/sniperkdrating.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/KDVersusRating">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>Despite their record, the Ninjas in Pajamas are relatively evenly spaced around the average, with relatively low overall K/D variance with f0rest nearly representing the exact average. Players like OpTic’s Mixwell and Fnatic’s Dennis also populate this region. </p>
+
+<h2 id="trade-kills-versus-trade-deaths">Trade Kills versus Trade Deaths</h2>
+
+<p>There is naturally no correlation between these two variables since they do not impact each other. For purposes of this analysis, trade kills are defined as a player killing the opponent who killed a player’s teammate within 4 seconds. Trade deaths are when the same occurs, only in reverse: a player’s teammate kills the opponent who killed the player.</p>
+
+<figure>
+<img src="img/trades.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/TradeKillsversusTradeDeaths">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>Overall, riflers tend to trade at a <a href="https://twitter.com/rxcs/status/865374807369461760">higher rate</a> than AWPers. This makes sense because AWPers primarily play defensive positions that do not allow them to trade or to get traded easily, so their deaths often go unavenged. </p>
+
+<p>When the data is filtered to only show players who have played more than 100 rounds, players who are mots likely to have their death traded are Liquid’s EliGE and Cloud9’s autimatic. Elige, however, has a far above average rate for both traded kills and deaths, at <code>23%</code> and <code>25%</code> respectively, followed by Fnatic’s Dennis at <code>22%</code> and <code>23%</code>, respectively.</p>
+
+<p>Using the same filters, players like Renegades’s NEXA and NRG’s FugLy are most likely to get a trade kill, with respective rates of <code>27%</code> and <code>26%</code> respectively. </p>
+
+<p>Fnatic comes out at both bottom spots: While JW is the least likely to have his death traded, olofmeister is the least likely to get a trade kill. JW’s predicament is far more serious as he is Fnatic’s AWPer: the fact that they are unable to avenge his death means his deaths are a large economic liability as he has the highest propensity to use expensive equipment.</p>
+
+<figure>
+<img src="img/fnatictrades.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/TradeKillsversusTradeDeaths">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>Overall, as players’ ratings increase, the more likely they are to have their death traded. This likely means the rating algorithm favors aggressive riflers who get more kills and does not place enough importance on other ways a player can impact the outcome of a round.</p>
+
+<h2 id="entry-kills-versus-entry-holds">Entry Kills versus Entry Holds</h2>
+
+<p>For this analysis, entry kills are awarded to the killer when is done by a CT and entry holds are awarded to the killer when the first kill of a round is performed by a T. There is naturally very little correlation between these variables as well, <a href="https://twitter.com/rxcs/status/862422634981543936">demonstrating</a> that while most players are able to play both offensive and defensive positions, players at either extreme are less versatile. </p>
+
+<p>The success rates are calculated based on how many opportunities they have: if players lose their chances to hold a bomb site, their entry hold success rate will fall.</p>
+
+<figure>
+<img src="img/entries.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/EntriesKillsversusEntryHolds">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>When filtered for players that have played more than 100 rounds; Cloud9’s Stewie2k and Liquid’s EliGE lead the population in entry kill successes, winning <code>77%</code> and <code>76%</code> respectively. Liquid’s JDM closely follows EliGE with a <code>75%</code> entry kill success rate, the best of any AWPer in the sample.</p>
+
+<figure>
+<img src="img/entrysniper.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/EntriesKillsversusEntryHolds">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>On the defensive side, G2’s kennyS and Cloud9’s skadoodle lead with respective hold success rates of <code>84%</code> and <code>77%</code>. Overall, AWPers have higher rates of entry hold successes since on CT side they mainly play defensive positions and angles. </p>
+
+<p>Trailing the pack are Dignitas’s Rubino and Renegades’s NEXAC, both with less than <code>30%</code> success rates of holds and entries. Both players are performing far below the average success rate of 50%.</p>
+
+<h2 id="player-multi-kills">Player Multi-kills</h2>
+
+<p>Like the first player statistics table, this table organizes players by team. The table shows the number of multi-kill rounds each player has had. Few players have yet to get aces. However, all but four teams have had at least one ace.</p>
+
+<figure>
+<img src="img/multikills.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerMultikillsbyTeam">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>Even though they are the highest-rated team, overall FaZe clan has a relatively low level of kills across the board. Overall, the average player has the following statistics:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Multi-Kill</th>
+	<th style="text-align:left;">Average</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">1K</td>
+	<td style="text-align:left;">77.3</td>
+</tr>
+<tr>
+	<td style="text-align:left;">2K</td>
+	<td style="text-align:left;">31.3</td>
+</tr>
+<tr>
+	<td style="text-align:left;">3K</td>
+	<td style="text-align:left;">9.06</td>
+</tr>
+<tr>
+	<td style="text-align:left;">4K</td>
+	<td style="text-align:left;">1.80</td>
+</tr>
+<tr>
+	<td style="text-align:left;">5K</td>
+	<td style="text-align:left;">0.23</td>
+</tr>
+</tbody>
+</table>
+
+<p>G2 has the highest amount of players with aces: bodyy ad NBK both have had two so far while kennyS has had one. Following their five aces, Luminosity and Liquid have three each. </p>
+
+<h2 id="player-clutches-by-team">Player Clutches by Team</h2>
+
+<p>Finally, this table summarizes how many clutches each player has. It is sorted the same way as the multi-kill table. The top section shows what a player’s clutch success rate is. Since clutching a round in any 1 versus X situation is difficult to accomplish, most of the players have a 0% success rate. When we filter them out we can see which players are the best at winning a 1 versus X scenario:</p>
+
+<figure>
+<img src="img/clutches.png" alt="" />
+</figure>
+
+<blockquote>
+<p><a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerClutchesbyTeam">Click here</a> to view a fully interactive version of this chart on Tableau.</p>
+</blockquote>
+
+<p>Interestingly, players win more 1 versus 2 situations than they win 1 versus 1 situations. When we filter for players that have played more than 100 rounds, Cloud9’s Shroud comes out on the top of the clutching pule, winning three of the five 1 versus 2 situations he faced. Virtus.Pro's Taz won eight of his nineteen clutch scenarios. In addition to having won the most clutches, Taz has the 5th highest clutch win ratio at 42%.</p>
+
+<h1 id="summary">Summary</h1>
+
+<p>In sum, the ECS tournament provides an excellent opportunity to visualize patterns in professional-level Counter-Strike. Using various tools we can drill down to relevant and interesting data.</p>
+
+<p>Explore the data in the Tableau below. You will not be disappointed.</p>
+
+<h2 id="raw-data">Raw Data</h2>
+
+<p>This data comes in 2 major formats: Excel (.xlsx) and Tableau (.twbx). HLTV.org hosts the demo files. All of the data files used are located in the <a href="data">/data</a> directory of this post. These are the individual files with respective descriptions:</p>
+
+<ul>
+<li>ECSSeason3AnalysisWeek5.xlsx (3.4 mb) | <a href="data/ECSSeason3AnalysisWeek5.xlsx">Direct Download</a> | <a href="https://doc.co/mPK2kg">View Docs.com</a>
+
+<ul>
+<li>Excel file with all of the aforementioned data including all of the lookup tables and formulas</li>
+</ul></li>
+<li>ECSSeason3AnalysisWeek5.twbx (72 kb) | <a href="data/ECSSeason3AnalysisWeek5.twbx">Direct Download</a>
+
+<ul>
+<li>Tableau data file</li>
+</ul></li>
+</ul>
+
+<h2 id="disclosure-and-notes">Disclosure and Notes</h2>
+
+<ul>
+<li>All data was sourced from HLTV-hosted match demos</li>
+<li>Findings, calculations, and all data are published under the CC-BY–4.0 license</li>
+</ul>
+
+<h2 id="tableau">Tableau</h2>
+
+<p>The entire Tableau is available <a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam">here</a>. The best way to view this is in its own window or in the Tableau app.</p>
+
+<hr />
+<center><p>Discussion on <a href="https://www.reddit.com/r/GlobalOffensive/comments/6caqiq/visualizing_ecs_season_3_by_the_numbers_article/">r/GlobalOffensive</a> | View as: <a href="data/ECS%20Week%203%20By%20the%20Numbers.pdf">PDF</a> / <a href="data/ECS%20Week%203%20By%20the%20Numbers.txt">Markdown</a></p></center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-14869">
+<p>I have received feedback that I both focus too much on methodology and not enough on it, so I am warning you here if you wish to skip the “boring” part. If you want a real tl;dr, skip to the conclusion. For just the data, check out the <a href="https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam">Tableau.</a> <a href="#fnr1-14869" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-14869">
+<p>That I have used <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/">before</a>! <a href="#fnr2-14869" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-14869">
+<p>I find this to be very pesky since it is another step to sanitize the data. Pro players should use standard names so we always know who they are. <a href="#fnr3-14869" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn4-14869">
+<p>Yes, you can use <code>VLOOKUP</code>, but it would be incredibly silly to do so since <code>VLOOKUP</code> is a <a href="https://medium.com/@cbenkendorf/why-excel-vlookup-sucks-and-what-to-use-instead-3d82e697512">terrible, horrible, no good, very bad formula.</a> <a href="#fnr4-14869" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn5-14869">
+<p>I have no idea why this is even allowed. It seems very silly to me to allow people to play using one identity across multiple accounts. <a href="#fnr5-14869" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn6-14869">
+<p>Some teams have more than five players because they have changed their roster mid-tournament. Dignitas and Ghost have done this the most so far. <a href="#fnr6-14869" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn7-14869">
+<p>That is, average rating of players on the team. <a href="#fnr7-14869" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+
+</div>
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

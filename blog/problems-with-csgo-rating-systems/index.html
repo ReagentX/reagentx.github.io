@@ -1,0 +1,414 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<time class="article_time">September 20, 2017</time>
+<title>Exploring Problems with Counter-Strike Rating Systems</title>
+<h1 class="article_title">Exploring Problems with Counter-Strike Rating Systems</h1>
+<p>When you look at the back of a baseball card, you don’t see a single rating. You see time-series information about that player.<sup><a href="#fn1-25307" id="fnr1-25307" title="see footnote" class="footnote">1</a></sup> Additionally, they do not use a single number to tell a story about a player. No magic number that will accurately depict a player’s performance. However, with younger sports like Counter-Strike: Global Offensive, the single stat most people focus on is a player’s rating. This single number is problematic for many reasons. With the trove of data we have access to in demo files that we do not have with any other sport, we need to move to something more nuanced.<sup><a href="#fn2-25307" id="fnr2-25307" title="see footnote" class="footnote">2</a></sup></p>
+
+<figure>
+<img src="img/baseball.jpg" alt="" />
+</figure>
+
+<p>Recently, HLTV <a href="https://www.hltv.org/news/20695/introducing-rating-20">announced</a> a new rating system for professional CS:GO players. This new system was designed to weight more impactful kills more than less impactful ones. They describe the system as one that “better encapsulates the different ways players contribute in the game.” Statistically speaking this is untrue. HLTV 2.0 provides no statistically discernible difference that improves it in comparison with its predecessor.</p>
+
+<h1>HLTV 1.0 Construction</h1>
+
+<p>According to HLTV, the <a href="https://web.archive.org/web/20100414190652/https://www.hltv.org/?pageid=242&amp;eventid=0">rating 1.0</a> system uses three distinct elements:</p>
+
+<ul>
+<li>Kills Per Round</li>
+<li>Survived Rounds Per Round</li>
+<li>A value based on number of rounds with multiple kills</li>
+</ul>
+
+<h2>Formula</h2>
+
+<p>The formula HLTV uses to calculate the rating can be expressed as follows, where Cs are the respective constants and the summation represents the multi-kill rating:</p>
+
+<figure>
+<img src="img/hltv1formula.png" alt="" />
+</figure>
+
+<p>In this context, the Σ calculates an average value for all of the multi-kill events (k<sub>1</sub>, k<sub>2</sub> , etc.) weighted by the square of the number of kills. The constants C<sub>n</sub> are overall longitudinal averages:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Constant (Average)</th>
+	<th style="text-align:left;">Symbol</th>
+	<th style="text-align:left;">Value</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">Kills per Round</td>
+	<td style="text-align:left;">C<sub>0</sub></td>
+	<td style="text-align:left;">0.679</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Survived Rounds</td>
+	<td style="text-align:left;">C<sub>1</sub></td>
+	<td style="text-align:left;">0.317</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Multikill Rating</td>
+	<td style="text-align:left;">C<sub>2</sub></td>
+	<td style="text-align:left;">1.277</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Calculation</h2>
+
+<p>This rating system is trivial to calculate in Excel. Since we are given the several constants, leveraging a lookup table allows us to adjust these to determine their respective effects. These Excel formulas calculate the three variables described above.</p>
+
+<h3>Kills Rating</h3>
+
+<p>Since this is simple division, we do not need to use anything complicated to calculate a kill rating:</p>
+
+<p><code>=(Kills/Rounds)/0.679</code></p>
+
+<h3>Survival Rating</h3>
+
+<p>This is similarly simple.</p>
+
+<p><code>=((Rounds-Deaths)/Rounds)/0.317</code></p>
+
+<h3>Multikill Rating</h3>
+
+<p>This is peskier to calculate, but overall contains only simple addition and division.</p>
+
+<p><code>=((1K+(4*2K)+(9*3K)+(16*4K)+ (25*5K))/Rounds)/1.277</code></p>
+
+<h3>Combining the Variables</h3>
+
+<p>To calculate these all together, simply reference the respective cells and use the Rating 1.0 formula:</p>
+
+<p><code>=(KillRating+(0.7*SurvivalRating) +MultikillRating)/2.7</code></p>
+
+<p>These can also all be combined to a single cell:</p>
+
+<p><code>=(((Kills/Deaths)/0.679)+ (0.7*(((Rounds-Deaths)/Deaths)/0.317))+ (((1K+(4*2K)+(9*3K)+(16*4K)+(25*5K))/Rounds)/1.277))/2.7</code></p>
+
+<h1>Rating 1.0 Problems</h1>
+
+<p>Because rating 1.0 relies on simple mathematics and a small cluster of data, it tends to be biased towards rewarding players with higher kill death ratios. This is problematic because kill death ratio is already an entirely useful metric on its own; having two metrics to judge players that tell you the same thing provides no additional insight.</p>
+
+<h2>Reliance on Averages</h2>
+
+<p>HLTV 1 relies on three constants. This is problematic for several reasons, not the least of which is that they are not the averages anymore.</p>
+
+<h3>Incorrect Averages</h3>
+
+<p>Primarily, the averages of 0.679, 0.317, and 1.277 are simply wrong. Looking at the averages we see in the actual statistics; these numbers are closer to the following:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Variable</th>
+	<th style="text-align:left;">HLTV Average</th>
+	<th style="text-align:left;">Actual Average</th>
+	<th style="text-align:left;">Diff</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">Kills per Round</td>
+	<td style="text-align:left;">0.679</td>
+	<td style="text-align:left;">0.658</td>
+	<td style="text-align:left;">0.021</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Survived Rounds</td>
+	<td style="text-align:left;">0.317</td>
+	<td style="text-align:left;">0.318</td>
+	<td style="text-align:left;">0.001</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Multikill Rating</td>
+	<td style="text-align:left;">1.277</td>
+	<td style="text-align:left;">1.193</td>
+	<td style="text-align:left;">0.084</td>
+</tr>
+</tbody>
+</table>
+
+<p>These averages shift the actual values of rating 1.0. The HLTV 1.0 column uses the original averages, and the Adjusted column uses the actual averages.</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">KPR</th>
+	<th style="text-align:left;">SPR</th>
+	<th style="text-align:left;">MKR</th>
+	<th style="text-align:left;">HLTV1</th>
+	<th style="text-align:left;">Adj</th>
+	<th style="text-align:left;">Diff</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">0.96</td>
+	<td style="text-align:left;">0.37</td>
+	<td style="text-align:left;">2.01</td>
+	<td style="text-align:left;">1.42</td>
+	<td style="text-align:left;">1.47</td>
+	<td style="text-align:left;">0.06</td>
+</tr>
+<tr>
+	<td style="text-align:left;">0.63</td>
+	<td style="text-align:left;">0.38</td>
+	<td style="text-align:left;">1.10</td>
+	<td style="text-align:left;">0.98</td>
+	<td style="text-align:left;">1.01</td>
+	<td style="text-align:left;">0.03</td>
+</tr>
+<tr>
+	<td style="text-align:left;">0.51</td>
+	<td style="text-align:left;">0.36</td>
+	<td style="text-align:left;">0.66</td>
+	<td style="text-align:left;">0.77</td>
+	<td style="text-align:left;">0.79</td>
+	<td style="text-align:left;">0.02</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Averages are Constants</h3>
+
+<p>Additionally, static averages do not provide for comparison of individuals. While using a population mean allows you to compare a player against the overall average, it does not enable one to demonstrate how a player performs relative to their mean. This means the average does not account for map differences, team differences, or other variables that account for variances in kills and deaths. </p>
+
+<h2>Reliance on K/D</h2>
+
+<p>To demonstrate this problem with rating 1.0, we need only run a simple linear regression to determine the effect the kill death ratio has on individual players. Using the Ratio 1.0 table from my <a href="https://www.kaggle.com/reagentx/HLTVData">database</a> of player statistics, we can confidently say that the kill death ratio explains 88% of the change in rating 1.0:</p>
+
+<figure>
+<img src="img/rating1reg.png" alt="" />
+</figure>
+
+<h3>Using a Regression Equation</h3>
+
+<p>This regression demonstrates that we can use the following formula to estimate rating 1.0 for a player:</p>
+
+<figure>
+<img src="img/hltv1regequ.png" alt="" />
+</figure>
+
+<p>This is a far cry from the official equation, yet it nets us 88% of the change. If we instead split the regression into kills and deaths instead of a simple ratio, we get an ever more accurate picture:</p>
+
+<figure>
+<img src="img/hltv1reg2.png" alt="" />
+</figure>
+
+<p>This regression allows us to predict rating 1 with even more accuracy, this time with a 5% improvement in our correlation coefficient. The formula for this regression is as follows:</p>
+
+<figure>
+<img src="img/rating1regeq2.png" alt="" />
+</figure>
+
+<h3>Increasing R²</h3>
+
+<p>If we add HLTV’s KAST<sup><a href="#fn3-25307" id="fnr3-25307" title="see footnote" class="footnote">3</a></sup> ratio and average damage per round into the mix, the correlation coefficient increases to almost 95%:</p>
+
+<figure>
+<img src="img/fullhltv1reg.png" alt="" />
+</figure>
+
+<p>Here, the variance inflation factors demonstrate that there is no multicollinearity problem with the data and that each variable has an effect on the outcome.</p>
+
+<p>Interestingly, here the KAST ratio has a marginally negative effect on a player’s rating: the higher a player’s KAST is, the more negatively it affects a player’s rating. </p>
+
+<h2>Predicting Rating 1</h2>
+
+<p>Using this to predict HLTV Rating 1 and plotting yields this curve:</p>
+
+<figure>
+<img src="img/hltv1quadscatter.png" alt="" />
+</figure>
+
+<p>Naturally, there is some degree of error, however explaining over 88% of the change in rating 1 with the kill death ratio is problematic because the entire point of rating 1.0 is to <em>not</em> be a kill death ratio. Because of these problems, HLTV created their <a href="https://www.hltv.org/news/20695/introducing-rating-20">rating 2.0 system</a> in June of 2017.</p>
+
+<h1>HLTV 2.0 Construction</h1>
+
+<p>HLTV describes the rating 2.0 system in their <a href="https://www.hltv.org/news/20695/introducing-rating-20">blog post</a>:</p>
+
+<blockquote>
+<p>[Rating 2.0 is] an updated formula for the Rating which we use to quickly assess player performance. It now incorporates data like damage dealt, opening kills, 1onX wins, traded deaths and more, and thus better encapsulates the different ways players contribute in the game.</p>
+</blockquote>
+
+<p>Graphically, the inputs are interesting to see. This is a more advanced system that incorporates more variables and attempts to explain more variation in player performance.</p>
+
+<figure>
+<img src="img/rating2g.png" alt="" />
+</figure>
+
+<h2>Variables</h2>
+
+<p>According to the post, it uses ten inputs instead of the previous three (one set of five for each side played):</p>
+
+<ul>
+<li>Kill Rating</li>
+<li>Survival Rating</li>
+<li>KAST Rating</li>
+<li>New Impact Rating</li>
+<li>Damage Rating</li>
+</ul>
+
+<h2>Comparison</h2>
+
+<p>As they explain, this boosts some players and reduces others. For a sample of the 80 players at <a href="https://www.hltv.org/stats/players?event=2720">PGL Krakow 2017</a>, we can see how Rating 1 and Rating 2 compare:</p>
+
+<figure>
+<img src="img/hltv1vs2.png" alt="" />
+</figure>
+
+<p>Overall the ratings are quite similar. In fact, their pairwise correlation value is <code>0.9529</code>. Unsurprisingly, the two rating systems are highly correlated. </p>
+
+<h3>HLTV 2.0 Formula</h3>
+
+<p>HLTV decided against releasing the formula for rating 2.0, but this does not mean we cannot use the same type of econometric analysis to predict something very close using the same variables. Using this method we can also compare this new system to the older system by determining how the variables that affected rating 1.0 affect 2.0.</p>
+
+<h1>HLTV 2 Problems</h1>
+
+<p>As with rating 1.0, there are identical problems with what variables influence the outcome the most.</p>
+
+<h2>Testing Kill/Death ratio</h2>
+
+<p>To test this variable using the 200,000+ observations in the HLTV dataset, we must first generate the K/D variable. </p>
+
+<figure>
+<img src="img/genkd.png" alt="" />
+</figure>
+
+<p>This also gives us some interesting information about aggregated player performance: the average player has a KAST ratio of 69% while the mean rating is 1.06, slightly larger than the target average rating of 1.0.</p>
+
+<h3>Testing K/D</h3>
+
+<p>Now that we have the variable we can run the simple regression:</p>
+
+<figure>
+<img src="img/kdrating2.png" alt="" />
+</figure>
+
+<p>This tells us that KD alone explains 74% of the change in Rating 2.0. While this is down from the 88% of rating 1.0, it does not demonstrate a remarkable shift from the reliance on K/D as a metric for determining player performance.</p>
+
+<p>In fact, when testing separately on Kills and Deaths in lieu of using their ratio, the R² increases back to 88%:</p>
+
+<figure>
+<img src="img/killsdeathsrating2.png" alt="" />
+</figure>
+
+<p>This means that HLTV 2.0’s reliance does not fall squarely on the K/D ratio per-se. However, it is strongly positively correlated with the number of kills a player gets and strongly negatively correlated with the number of deaths a player has.</p>
+
+<h3>Prediction Based on K/D</h3>
+
+<p>When using this regression equation to predict the value of Rating 2.0 using only Kills and Deaths we see the following trend:</p>
+
+<figure>
+<img src="img/predictrating2plot.png" alt="" />
+</figure>
+
+<p>However, with the additional data in the HLTV database, we can increase the accuracy of this prediction.</p>
+
+<h2>Adding More Variables</h2>
+
+<p>As established with Rating 1.0, ADR and KAST ratio are significant variables that influence rating. Including them in the earlier regression increases the R² to 95%:</p>
+
+<figure>
+<img src="img/allvarsrating2.png" alt="" />
+</figure>
+
+<p>This regression demonstrates that all variables are statistically significant in influencing the value for Rating 2.0. It also evinces that all variables are positively correlated with Rating 2.0 aside from deaths, as we expect. This is different from Rating 1.0 which has a marginal negative correlation to the KAST ratio.</p>
+
+<p>Thus, we can use this formula to predict the value:</p>
+
+<figure>
+<img src="img/hltv2formula.png" alt="" />
+</figure>
+
+<h3>Plotting the New Prediction Formula</h3>
+
+<p>Using the above formula we can plot the predicted rating against the actual rating. This correlation is far stronger at 95% R² and lacks the binning pattern in the original rating 2.0 prediction:</p>
+
+<figure>
+<img src="img/predictedrating20allvars.png" alt="" />
+</figure>
+
+<h1>Conclusions</h1>
+
+<p>These regressions demonstrate that rating 2.0 simply plots the K/D ratio with little else thrown in to change the number. This does not mean that HLTVs claims that they use ten different pieces of information to calculate the new rating system. However, it does mean that we can arrive at the same conclusion with fewer, less complicated variables. </p>
+
+<h2>Improvements</h2>
+
+<p>As a result, we should take rating 1.0 and 2.0 with a grain of salt. The other four statistics that HLTV has on their page are far more telling about different aspects of player performance than these rating systems. Additionally, trade ratios should be accounted for.<sup><a href="#fn4-25307" id="fnr4-25307" title="see footnote" class="footnote">4</a></sup> </p>
+
+<p>Trade ratios are particularly important as they are not only a measure of team play but also a measure of individual skill: should a player have a high ADR or K/D and low trade death ratio, the numbers evince that player’s aggression has paid off. Likewise, low traded deaths and low K/D would reveal that the same aggression is not paying off. Additionally, entry kills and holds are important factors for determining whether teams can hold a site or enter a site. </p>
+
+<p>As with baseball, it does not make sense to compare pitchers to batters. Similarly, it is not logical to compare riflers, AWPers, entry fraggers, and IGLs. There are ways to measure each of these things distinctly—and we should do so.</p>
+
+<center><p>Discussion: <a href="https://www.reddit.com/r/GlobalOffensive/comments/71d32q/using_econometrics_to_explore_problems_with_csgo/">r/GlobalOffensive</a></p></center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-25307">
+<p><a href="https://twitter.com/rxcs/status/892127992897392640">Example here.</a> <a href="#fnr1-25307" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-25307">
+<p>Developing new rating systems is something I will address in a future blog post. The purpose of this post is to demonstrate <em>why</em> we need new rating systems. <a href="#fnr2-25307" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-25307">
+<p>KAST stands for rounds with a Kill, Assist, Survival, or Trade. <a href="#fnr3-25307" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn4-25307">
+<p>As I have in my <a href="https://twitter.com/rxcs/status/899402505926230017">prior</a> <a href="https://chrissardegna.com/blog/posts/ecs-season-season-three-by-the-numbers/">analyses.</a> <a href="#fnr4-25307" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

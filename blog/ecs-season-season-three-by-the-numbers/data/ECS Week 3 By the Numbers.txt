@@ -1,0 +1,221 @@
+{{TOC}}
+
+Visualizing player performance in Counter-Strike: Global Offensive is simple to do if one leverages the proper tools. Professional players are a useful baseline to use these tools since they generally play with and against the opponents of similar expertise, thus comparisons are meaningful. 
+
+This article focusses on both **methodology** and **analysis**.[^I have received feedback that I both focus too much on methodology and not enough on it, so I am warning you here if you wish to skip the “boring” part. If you want a real tl;dr, skip to the conclusion. For just the data, check out the [Tableau.](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam)] If reading about Excel formulas and analytical tools seems disinteresting, skip to the analysis and visualization section from the table of contents above.
+
+All of the data associated with this project is attached at the bottom, along with sources and other pertinent disclosures.
+
+# Preparing the Data
+
+EC Season 3 is divided into two events: a [North American Event](http://www.hltv.org/?pageid=216&eventid=2729) and a [European Event](http://www.hltv.org/?pageid=216&eventid=2728). As of week 5, 111 players across 20 teams competed in 112 matches. This leaves us with a rather large sample size and several inserting ways to sort players. Not only can we sort players by team but also by region. Further, using various modeling tools, we can determine an even greater level of detail about how players have been performing so far during the third season of ECS.
+
+![](img/hltvdemolist.png)
+
+Source material must be acquired to begin any analysis. HLTV is the best source for professional match data as they host nearly every demo file for every professional competition. To quickly download large volumes of demos, leverage my [Demo Downloader script](https://chrissardegna.com/blog/posts/using-python-download-hltv-demos/), written in Python.
+
+## Importing to Excel
+
+Once we have the demo files, it is simple to roll them into Excel. Valve has an open source library made for analyzing CS:GO demos called [csgo-demoinfo](https://github.com/ValveSoftware/csgo-demoinfo) written in C# that may other open-source solutions are based on. [CSGO-Demos-Manager](https://github.com/akiver/CSGO-Demos-Manager/) is a well-designed open-source solution[^That I have used [before](https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/)!] that makes it simple to analyze demos and dump the data to Excel.
+
+### Cleaning the Names
+
+One downside of non-Valve tournaments is that players use non-standard names[^I find this to be very pesky since it is another step to sanitize the data. Pro players should use standard names so we always know who they are.]. To filter spam out of the names, it is best to rename them manually on the `Players` sheet. Since players’ Steam IDs are listed here as well, we can make these revised names flow through to other sheets by looking them up based on the unchanging Steam ID.
+
+The primary place names need replacing is the `Kills` sheet. Create two new columns: `Killer Name Corrected` and `Killed Name Corrected`. Both of these will use `INDEX MATCH`[^Yes, you can use `VLOOKUP`, but it would be incredibly silly to do so since `VLOOKUP` is a [terrible, horrible, no good, very bad formula.](https://medium.com/@cbenkendorf/why-excel-vlookup-sucks-and-what-to-use-instead-3d82e697512)] formulas to bring the corrected names in:
+
+    =INDEX(PlayerNames,MATCH(E2,SteamIDs,0))
+
+Where `E2` is the reference to the Steam ID of the individual on the `Kills` sheet, and `PlayerNames` and `SteamIDs` are named ranges on the `Players` sheet where the original corrected names are.
+
+Occasionally players will play under more than one Steam ID.[^I have no idea why this is even allowed. It seems very silly to me to allow people to play using one identity across multiple accounts.] Because of this, some statistics will need to be calculated manually since there is no way currently for CSGO-Demos-Manager to calculate data for a single player with more than one Steam ID.
+
+## Determining Weapon Preference
+
+Since weapons are generally used positionally and situationally, [especially AWPs](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/AWPEntryAnalysis/AWPEntryHoldKillAnalysis), it is important to be able to filter on whether a player prefers to use a sniper or not. To accomplish this, we can leverage the `Kills` sheet from the CSGO-Demos-Manager export. 
+
+### Building a Lookup Table
+
+First, create a lookup table to determine the weapon type to aggregate different types of kills. This can easily be accomplished on the `Weapons` sheet since it already has a list of all of the weapons. [Here](https://docs.google.com/spreadsheets/d/1nQrkzWKh3hTgfl1Mmy2yo6reWQxXEtjpMycLzZwYXKI/edit?usp=sharing) is what the table should look like. Next, use `INDEX MATCH` to bring that into the `Kills` sheet so that we can sort not just on the specific weapon but also on weapon type. Add this formula after the `Weapon` column:
+
+    =INDEX(WeaponType,MATCH(R9,WeaponName,0))
+
+### Building the PivotTable
+
+From here we can make a PivotTable to summarize which weapon type players prefer. Create a PivotTable from the `Kills` sheet. This PivotTable will use the following construction:
+
+![](img/sniperpivot.png)
+
+#### Hacking the PivotTable
+
+Once filter on the column labels `Rifle` and `Sniper` this PivotTable shows which preference players have. To codify this as a variable, we need to extract this information. This is most easily accomplished by using a pesky `=GETPIVOTDATA` trick. First, copy the list of names to the left of the table. Then, use 
+
+    =IF(GETPIVOTDATA("Weapon Type",$B$3,"Killer Name Corrected",A5,"Weapon Type","Rifle")>GETPIVOTDATA("Weapon Type",$B$3,"Killer Name Corrected",A5,"Weapon Type","Sniper"),"Rifler","Sniper")    
+
+Where `$B$3` is the PivotTable reference and `A5` is the reference to the name we pasted. This formula returns `Rifler` if the player has more rifle kills than sniper kills or `Sniper` when the reverse is true. The table should now look like this:
+
+![](img/sniperpivot2.png)
+
+### Matching Players
+
+Finally, create a new column on the `Players` sheet and use `INDEX MATCH` on the the player names to bring in the weapon preference:
+
+    =INDEX(WeaponPreference,MATCH(A2,SniperLookupName,0))
+
+Where `A2` is a reference to the player name on the `Players` sheet and `WeaponPreference` and `SniperLookupName` are named ranges from the Sniper lookup PivotTable made earlier.
+
+## Determining Team Location
+
+Because there are technically two tournaments–North American and European–distinguishing the two is important. This can easily be accomplished with another lookup table of the team name and the location. One is prepared in [this Google Sheet](https://docs.google.com/spreadsheets/d/1GxH0YDwhdfACzH-CLA-C56Rn5EAKO3i517zxEATLl6M/edit?usp=sharing).
+
+Once this is imported to the Excel document, it is simple to add another column on the `Players` sheet that brings this information in:
+
+    =INDEX(Country,MATCH(C2,TeamName,0))
+
+Where `C2` is a reference to the team name on the `Players` sheet and `Country` and `TeamName` are named ranges on the country lookup table.
+
+# Analysis and Visualization
+
+Once the data is clean, we can begin analyzing it. This analysis mainly focusses on player performance, so the following charts will all stem from the `Players` sheet.
+
+## Data Available to Analyze
+
+The `Player` Excel export contains a plethora of data related to individual performance. Rating, K/D, HS%, ADR, APR, DPR, ADR, and many other variables are calculated here. 
+
+Since we added columns for country and weapon preference, we can see how the above variables are influenced by including or excluding certain groups. Since players are also tagged with the team, they played for we can also sort by team[^Some teams have more than five players because they have changed their roster mid-tournament. Dignitas and Ghost have done this the most so far.].
+
+## Player Stats by Team
+
+This table demonstrates the variance in impact that players have on their teams’ success. Teams, sorted by descending average rating[^That is, average rating of players on the team.] and broken down by player categorize the data. The shaded area behind each team’s players represents the difference between the least and most impactful player, thus a team of similarly-skilled players will have smaller variance,
+
+![](img/statsbyteam.png)
+
+>[Click here](https://public.tableau.com/profile/publish/EUversusNAAnalysis/PlayerStatsbyTeam#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam) to view a fully interactive version of this chart on Tableau.
+
+Interestingly, FaZe Clan, the highest-rated team, has the highest variance between their players across nearly every measure: they have the highest variance in terms of rating, K/d, KPR, ADR, and HS%. Niko leads his team in nearly every attribute.
+
+![](img/fazevar.png) 
+
+>[Click here](https://public.tableau.com/profile/publish/EUversusNAAnalysis/PlayerStatsbyTeam#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam) to view a fully interactive version of this chart on Tableau.
+
+At the bottom of the pack, Dignitas and Ghost trail. This is likely because they are both constantly trading players and searching for a cohesive team s they have obviously not yet found one.
+
+## K/D versus HLTV Rating
+
+The generally positive correlation between these two variables demonstrates where the [HLTV Rating](http://www.hltv.org/?pageid=242&eventid=0) breaks from the kill/death ratio.
+
+![](img/ratingkd.png)
+
+>[Click here](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/KDVersusRating) to view a fully interactive version of this chart on Tableau.
+
+Most players cluster around a 0.97 rating and a 0.992 K/D ratio, which makes sense seeing that K/D is a zero-sum game: for a player to gain, another must lose.
+
+Riflers like niko and rain are far above the pack with their respective ratings of `1.48` and `1.38`. Trailing are players like pita and Pimp, with respective ratings of `0.66` and `0.67`.
+
+On the AWP side of things, kennyS leads the pack with a rating of `1.29`. Maikelele trails the pack with an abysmal `0.57` rating, the lowest of any player in this tournament.
+
+![](img/sniperkdrating.png)
+
+>[Click here](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/KDVersusRating) to view a fully interactive version of this chart on Tableau.
+
+Despite their record, the Ninjas in Pajamas are relatively evenly spaced around the average, with relatively low overall K/D variance with f0rest nearly representing the exact average. Players like OpTic’s Mixwell and Fnatic’s Dennis also populate this region. 
+
+## Trade Kills versus Trade Deaths
+
+There is naturally no correlation between these two variables since they do not impact each other. For purposes of this analysis, trade kills are defined as a player killing the opponent who killed a player’s teammate within 4 seconds. Trade deaths are when the same occurs, only in reverse: a player’s teammate kills the opponent who killed the player.
+
+![](img/trades.png)
+
+>[Click here](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/TradeKillsversusTradeDeaths) to view a fully interactive version of this chart on Tableau.
+
+Overall, riflers tend to trade at a [higher rate](https://twitter.com/rxcs/status/865374807369461760) than AWPers. This makes sense because AWPers primarily play defensive positions that do not allow them to trade or to get traded easily, so their deaths often go unavenged. 
+
+When the data is filtered to only show players who have played more than 100 rounds, players who are mots likely to have their death traded are Liquid’s EliGE and Cloud9’s autimatic. Elige, however, has a far above average rate for both traded kills and deaths, at `23%` and `25%` respectively, followed by Fnatic’s Dennis at `22%` and `23%`, respectively.
+
+Using the same filters, players like Renegades’s NEXA and NRG’s FugLy are most likely to get a trade kill, with respective rates of `27%` and `26%` respectively. 
+
+Fnatic comes out at both bottom spots: While JW is the least likely to have his death traded, olofmeister is the least likely to get a trade kill. JW’s predicament is far more serious as he is Fnatic’s AWPer: the fact that they are unable to avenge his death means his deaths are a large economic liability as he has the highest propensity to use expensive equipment.
+
+![](img/fnatictrades.png)
+
+Overall, as players’ ratings increase, the more likely they are to have their death traded. This likely means the rating algorithm favors aggressive riflers who get more kills and does not place enough importance on other ways a player can impact the outcome of a round.
+
+## Entry Kills versus Entry Holds
+
+For this analysis, entry kills are awarded to the killer when is done by a CT and entry holds are awarded to the killer when the first kill of a round is performed by a T. There is naturally very little correlation between these variables as well, [demonstrating](https://twitter.com/rxcs/status/862422634981543936) that while most players are able to play both offensive and defensive positions, players at either extreme are less versatile. 
+
+The success rates are calculated based on how many opportunities they have: if players lose their chances to hold a bomb site, their entry hold success rate will fall.
+
+![](img/entries.png)
+
+>[Click here](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/EntriesKillsversusEntryHolds) to view a fully interactive version of this chart on Tableau.
+
+When filtered for players that have played more than 100 rounds; Cloud9’s Stewie2k and Liquid’s EliGE lead the population in entry kill successes, winning `77%` and `76%` respectively. Liquid’s JDM closely follows EliGE with a `75%` entry kill success rate, the best of any AWPer in the sample.
+
+![](img/entrysniper.png)
+
+>[Click here](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/EntriesKillsversusEntryHolds) to view a fully interactive version of this chart on Tableau.
+
+On the defensive side, G2’s kennyS and Cloud9’s skadoodle lead with respective hold success rates of `84%` and `77%`. Overall, AWPers have higher rates of entry hold successes since on T side they mainly play defensive positions and angles. 
+
+Trailing the pack are Dignitas’s Rubino and Renegades’s NEXAC, both with less than `30%` success rates of holds and entries. Both players are performing far below the average success rate of 50%.
+
+## Player Multi-kills
+
+Like the first player statistics table, this table organizes players by team. The table shows the number of multi-kill rounds each player has had. Few players have yet to get aces. However, all but four teams have had at least one ace.
+
+![](img/multikills.png)
+
+>[Click here](https://public.tableau.com/profile/publish/EUversusNAAnalysis/PlayerStatsbyTeam#!/vizhome/EUversusNAAnalysis/PlayerMultikillsbyTeam) to view a fully interactive version of this chart on Tableau.
+
+Even though they are the highest-rated team, overall FaZe clan has a relatively low level of kills across the board. Overall, the average player has the following statistics:
+
+| Multi-Kill | Average |
+|:--|:--|
+| 1K | 77.3 |
+| 2K | 31.3 |
+| 3K | 9.06 |
+| 4K | 1.80 |
+| 5K | 0.23 |
+
+G2 has the highest amount of players with aces: bodyy ad NBK both have had two so far while kennyS has had one. Following their five aces, Luminosity and Liquid have three each. 
+
+## Player Clutches by Team
+
+Finally, this table summarizes how many clutches each player has. It is sorted the same way as the multi-kill table. The top section shows what a player’s clutch success rate is. Since clutching a round in any 1 versus X situation is difficult to accomplish, most of the players have a 0% success rate. When we filter them out we can see which players are the best at winning a 1 versus X scenario:
+
+![](img/clutches.png)
+
+>[Click here](https://public.tableau.com/profile/publish/EUversusNAAnalysis/PlayerStatsbyTeam#!/vizhome/EUversusNAAnalysis/PlayerClutchesbyTeam) to view a fully interactive version of this chart on Tableau.
+
+Interestingly, players win more 1 versus 2 situations than they win 1 versus 1 situations. When we filter for players that have played more than 100 rounds, Cloud9’s Shroud comes out on the top of the clutching pule, winning three of the five 1 versus 2 situations he faced. In terms of number of successes and not the ratio is Virtus.Pro’s Taz, who won eight of his nineteen clutch scenarios for a success ratio of 42%. This is especially impressive because in terms of ratios he is number five overall.
+
+# Summary
+
+In sum, the ECS tournament provides an excellent opportunity to visualize patterns in professional-level Counter-Strike. Using various tools we can drill down to relevant and interesting data.
+
+Explore the data in the Tableau below. You will not be disappointed.
+
+## Raw Data
+
+This data comes in 2 major formats: Excel (.xlsx) and Tableau (.twbx). HLTV.org hosts the demo files. All of the data files used are located in the [/data](data) directory of this post. These are the individual files with respective descriptions:
+
+- ECSSeason3AnalysisWeek5.xlsx (3.4 mb) | [Direct Download](data/ECSSeason3AnalysisWeek5.xlsx) | [View Docs.com](https://doc.co/mPK2kg)
+	- Excel file with all of the aforementioned data including all of the lookup tables and formulas
+- ECSSeason3AnalysisWeek5.twbx (72 kb) | [Direct Download](data/ECSSeason3AnalysisWeek5.twbx)
+	- Tableau data file
+
+Data parsed from HLTV demos using open-sources software is available [here](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam).
+
+## Disclosure and Notes
+
+- All data was sourced from HLTV-hosted match demos
+- Findings, calculations, and all data are published under the CC-BY–4.0 license
+
+## Tableau
+
+The entire Tableau is available [here](https://public.tableau.com/profile/christopher.sardegna#!/vizhome/EUversusNAAnalysis/PlayerStatsbyTeam). The best way to view this is in its own window or in the Tableau app.
+
+***
+
+<center><p>Discussion on [r/GlobalOffensive](#) | View as: [PDF](data/ECS%20Week%203%20By%20the%20Numbers.pdf) / [Markdown](#)</p></center>

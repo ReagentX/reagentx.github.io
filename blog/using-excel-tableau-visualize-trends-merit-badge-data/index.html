@@ -1,0 +1,337 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">February 14, 2018</time>
+<title>Using Excel and Tableau to Visualize Trends in Merit Badge Data</title>
+<h1 class="article_title">Using Excel and Tableau to Visualize Trends in Merit Badge Data</h1>
+<div class="TOC">
+
+
+<ul>
+<li><a href="#getting-the-data">Getting the Data</a>
+
+<ul>
+<li><a href="#sanitizing-the-data">Sanitizing the Data</a>
+
+<ul>
+<li><a href="#tagging-badge-types">Tagging Badge Types</a></li>
+<li><a href="#cleaning-names">Cleaning Names</a></li>
+<li><a href="#tagging-new-badges">Tagging New Badges</a></li>
+</ul></li>
+<li><a href="#transforming-the-data">Transforming the Data</a></li>
+</ul></li>
+<li><a href="#visualizing-the-data">Visualizing the Data</a>
+
+<ul>
+<li><a href="#converting-dates">Converting Dates</a></li>
+<li><a href="#charting-overall-trends">Charting overall trends</a></li>
+<li><a href="#charting-popularity-of-badges-longitudinally">Charting Popularity of Badges Longitudinally</a></li>
+</ul></li>
+<li><a href="#raw-data">Raw Data</a></li>
+</ul>
+</div>
+
+<p>Excel is a powerful tool for transforming datasets for use in more powerful visualization engines. Tableau and Excel together make a dangerous team when leveraged correctly, allowing for clear and concise communication of actionable data efficiently.</p>
+
+<h1 id="getting-the-data">Getting the Data</h1>
+
+<p>To begin, I used the dataset published on Scouting Magazine’s <a href="https://blog.scoutingmagazine.org/2018/02/14/presenting-the-2017-merit-badge-rankings-which-were-the-most-and-least-popular/">post</a> about Merit Badge popularity. This post included some summary metrics but also included the raw data of how many merit badges were earned for the years 2013 through 2017. The data is presented in an HTML table, which we can copy and paste directly into an Excel workbook without too much hassle.</p>
+
+<h2 id="sanitizing-the-data">Sanitizing the Data</h2>
+
+<p>Once the data is in an Excel sheet, there are two additional dimensions we can pull from this webpage as well as some cleanup to do to the Merit Badge names.</p>
+
+<h3 id="tagging-badge-types">Tagging Badge Types</h3>
+
+<p>The page lists for different asterisk levels denoting some classification about the requirements for Eagle: </p>
+
+<ul>
+<li>* On required list for Eagle Rank</li>
+<li>** Required for Eagle (must complete Cycling, Hiking or Swimming)</li>
+<li>*** Required for Eagle (must complete Emergency Preparedness or Lifesaving)</li>
+<li>**** Required for Eagle (must complete Environmental Science or Sustainability)</li>
+</ul>
+
+<p>To handle this, we can create a new “Eagle Required” column that leverages a simple formula to generate a dummy variable that allows us to differentiate between Eagle-Required and non-Eagle-Required merit badges:</p>
+
+<p><code>=ISNUMBER(SEARCH(&quot;~*&quot;,A2))</code></p>
+
+<p>This formula does two things:</p>
+
+<ol>
+<li>The <code>SEARCH(&quot;~*&quot;,A2)</code> part looks for the character string <code>*</code> inside of cell <code>A2</code>. Since by default Excel considers <code>*</code> to be a wildcard condition, we need to use <code>~*</code> to escape it. This will return the position of <code>*</code> as a number if it exists in the string. If not, it returns <code>#VALUE!</code></li>
+<li>The <code>ISNUMBER()</code> part checks if the result of the <code>SEARCH</code> is a number. If <code>SEARCH</code> returned a number, i.e., the position of an asterisk, the cell will display <code>TRUE</code>. If <code>SEARCH</code> does not return a number, i.e., there is no asterisk, the cell will display <code>FALSE</code>.</li>
+</ol>
+
+<p>This means that We can now filter on <code>TRUE</code>/<code>FALSE</code> to see whether a merit badge is Eagle Required or not.</p>
+
+<h3 id="cleaning-names">Cleaning Names</h3>
+
+<p>Since we do not want to see the Merit Badge names with asterisks next to them, we can take the column and paste it as values. Next, we can initiate a find and replace on the asterisk character on the range of Merit Badge names. Remember that we need to make the criteria to replace <code>~*</code> instead of <code>*</code> due to the wildcard condition.</p>
+
+<figure>
+<img src="img/findreplace.png" alt="" />
+</figure>
+
+<h3 id="tagging-new-badges">Tagging New Badges</h3>
+
+<p>The Scouting Magazine page uses colors to denote whether a merit badge was released in 2013 or later and considers these to be new badges. Excel cannot use a formula to check the color of a cell.<sup><a href="#fn1-22757" id="fnr1-22757" title="see footnote" class="footnote">1</a></sup> Since there are only a handful, I tagged these manually in a new column.</p>
+
+<h2 id="transforming-the-data">Transforming the Data</h2>
+
+<p>Because the data has multiple value columns, it is not a simple task to pivot this in a useful way:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Badge</th>
+	<th style="text-align:left;">Eagle Required</th>
+	<th style="text-align:left;">New</th>
+	<th style="text-align:left;">2013</th>
+	<th style="text-align:left;">2014</th>
+	<th style="text-align:left;">2015</th>
+	<th style="text-align:left;">2016</th>
+	<th style="text-align:left;">2017</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">Personal Fitness</td>
+	<td style="text-align:left;">True</td>
+	<td style="text-align:left;">False</td>
+	<td style="text-align:left;">56,295</td>
+	<td style="text-align:left;">50,693</td>
+	<td style="text-align:left;">52,499</td>
+	<td style="text-align:left;">52,079</td>
+	<td style="text-align:left;">50,428</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Programming</td>
+	<td style="text-align:left;">False</td>
+	<td style="text-align:left;">True</td>
+	<td style="text-align:left;">480</td>
+	<td style="text-align:left;">2,970</td>
+	<td style="text-align:left;">3,577</td>
+	<td style="text-align:left;">4,085</td>
+	<td style="text-align:left;">4,138</td>
+</tr>
+</tbody>
+</table>
+
+<p>To pivot this data, we need to manipulate it such that each year column turns into a single column:</p>
+
+<table>
+<colgroup>
+<col/>
+<col/>
+<col/>
+</colgroup>
+
+<thead>
+<tr>
+	<th>Badge</th>
+	<th>Eagle Required</th>
+	<th>New</th>
+	<th style="text-align:left;">Year</th>
+	<th style="text-align:left;">Value</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td>Art</td>
+	<td>False</td>
+	<td>False</td>
+	<td style="text-align:left;">2013</td>
+	<td style="text-align:left;">28031</td>
+</tr>
+<tr>
+	<td>Art</td>
+	<td>False</td>
+	<td>False</td>
+	<td style="text-align:left;">2014</td>
+	<td style="text-align:left;">25438</td>
+</tr>
+<tr>
+	<td>Art</td>
+	<td>False</td>
+	<td>False</td>
+	<td style="text-align:left;">2015</td>
+	<td style="text-align:left;">24374</td>
+</tr>
+<tr>
+	<td>Art</td>
+	<td>False</td>
+	<td>False</td>
+	<td style="text-align:left;">2016</td>
+	<td style="text-align:left;">22990</td>
+</tr>
+<tr>
+	<td>Art</td>
+	<td>False</td>
+	<td>False</td>
+	<td style="text-align:left;">2017</td>
+	<td style="text-align:left;">21567</td>
+</tr>
+</tbody>
+</table>
+
+<p>We can do this by using Get and Transform (previously called Power Query) in Excel. First, we need to make the source data we want to transform into a table, so select any cell with our Merit Badge data and hit <code>CTRL+T</code> to do so. Make sure “My table has headers” remains checked. </p>
+
+<p>Next, use “From Table” in the “Get and Transform” section under “Data” in the ribbon. The key chord to do this is <code>ALT+N → PT</code>. This will open up the Query Editor in a new window.</p>
+
+<figure>
+<img src="img/gandt.png" alt="" />
+</figure>
+
+<p>Once this window is open, navigate to the “Transform” section in the Query Editor Ribbon. Select the five year columns by clicking on 2013 and then shift-clicking on 2017. Once the years are selected, we can select “Unpivot” in the ribbon under the “Any Column” section.</p>
+
+<figure>
+<img src="img/unpivot.png" alt="" />
+</figure>
+
+<p>This will transform the data the way we need it, where there is only one value column with one row for each year.</p>
+
+<p>To load this data into Excel where it is usable, in the Get and Transform ribbon, navigate to “Home” and select “Close and Load.” This will display the transformed data in a new sheet.</p>
+
+<figure>
+<img src="img/candl.png" alt="" />
+</figure>
+
+<p>Now that the data is pivotable we can go ahead and run some analysis using a PivotTable or a PivotChart where the value for the years are separated longitudinally instead of categorically. However, this is also a perfect time to leverage Tableau’s visualization prowess.</p>
+
+<h1 id="visualizing-the-data">Visualizing the Data</h1>
+
+<p>Tableau can connect to Excel documents to extract data from them. This extraction also supports queries like the one we just made to transform the data. In Tableau, select “Microsoft Excel” from the Connect menu and select the file we created above. We should see three entries here: two sheets (one for each sheet we created) and one Query (the query we created in Power Query). Drag the Query in and load that as the source.</p>
+
+<h2 id="converting-dates">Converting Dates</h2>
+
+<p>Tableau does not immediately understand that the “Year” column is a date and not a number, so we need to specify the data type. In the Data sidebar, right-click on the Year dimension and navigate to Change Data Type &gt; Date. </p>
+
+<figure>
+<img src="img/tableaudates.png" alt="" />
+</figure>
+
+<p>To get these dates to display as just a year (2017) instead of MM/DD/YYYY, we need to drag it in as a variable. I put it in the column section so that it gets sorted left-to-right. Once the variable has been added, right-click and select “Year” to suppress the display of the interpolated month and day.</p>
+
+<h2 id="charting-overall-trends">Charting overall trends</h2>
+
+<p>To compare Eagle-Required badge volume to normal badge volume, we can use a column chart. For columns, use <code>Year</code> and <code>Eagle Required</code> in that order. For Rows, put <code>Value</code> from the measures section.</p>
+
+<figure>
+<img src="img/bar.png" alt="" />
+</figure>
+
+<p>To color code the columns, also drag the <code>Eagle Required</code> dimension onto the “Color” section of the Marks box.</p>
+
+<figure>
+<img src="img/barmarks.png" alt="" />
+</figure>
+
+<p>This generates a nice bar graph of the volume earned over time for normal and Eagle-Required Merit Badges:</p>
+
+<figure>
+<img src="img/barchart.png" alt="" />
+</figure>
+
+<p>This evinces an interesting trend: While Eagle-Required badges seem to be more or less steady, non-Eagle required badges are declining year-over-year. This leads me to believe that more people are only doing the &quot;bare minimum&quot; instead of continuing to work after they make Eagle. </p>
+
+<h2 id="charting-popularity-of-badges-longitudinally">Charting Popularity of Badges Longitudinally</h2>
+
+<p>We can also chart the changes over time as a line graph. This allows us to more easily discern the differences in popularity of merit badges over time. To do this, we only need to add the Dimension <code>Year</code> as a Column and the Measure <code>Value</code> as a Row. </p>
+
+<figure>
+<img src="img/line.png" alt="" />
+</figure>
+
+<p>To color code the lines, also drag the <code>Merit Badge</code> dimension onto the “Color” section of the Marks box.</p>
+
+<figure>
+<img src="img/linemarks.png" alt="" />
+</figure>
+
+<p>From here, we need to create some filters to make the chart more readable. Drag the Dimension <code>Eagle Required</code> and the Measure <code>Value</code> into the filters section. Right-click on each and select “Show filter” in the menu.</p>
+
+<figure>
+<img src="img/filters.png" alt="" />
+</figure>
+
+<p>This will create two filters. One where we can specify if we want to include or exclude normal or Eagle-Required badges and one where we can restrict the number earned. </p>
+
+<figure>
+<img src="img/filters2.png" alt="" />
+</figure>
+
+<p>This generates a nice line chart. When filtered only on Eagle Required badges, we see the following trends:</p>
+
+<figure>
+<img src="img/linechart.png" alt=""/>
+</figure>
+
+<p>This is interesting because it shows that most of the eagle required badges are relatively constant. Interestingly, Cooking spikes in 2014 to the highest point of any Merit Badge. This is because in 2014 it was added as a <a href="http://usscouts.org/advance/changes/advchanges14.asp#cooking">new requirement</a> to make Eagle. </p>
+
+<p>Also interesting is that First Aid is the most popular merit badge overall. This means that scouting leaders must push for this to be the first Eagle Required badge earned by scouts. Since other Eagle Required badges are all lower than this one, it makes sense to conclude that the added immediate importance of first aid over a badge like Citizenship in the Community influences the popularity.</p>
+
+<h1 id="raw-data">Raw Data</h1>
+
+<p>The data comes from Scouting Magazine’s <a href="https://blog.scoutingmagazine.org/2018/02/14/presenting-the-2017-merit-badge-rankings-which-were-the-most-and-least-popular/">blog post</a> entitled <em>Presenting the 2017 Merit Badge Rankings: Which were the most and least popular?</em></p>
+
+<p>You can access the Tableau file I generated <a href="https://public.tableau.com/profile/christopher.sardegna/#!/vizhome/BSA2013-2017MeritBadgeAnalysis/BSAMeritBadgeAnalysis">here</a>. I also uploaded the Excel file with the Query construction <a href="here">here</a>. Note that since Get and Transform is a Windows-only feature, you cannot edit the query on a Mac<sup><a href="#fn2-22758" id="fn2-22758" title="see footnote" class="footnote">2</a></sup>.</p>
+
+<hr />
+<center><p>Discussion: <a href="https://www.reddit.com/r/dataisbeautiful/comments/7xko62/interactive_bsa_merit_badge_trends_20132017_oc/">r/DataIsBeautiful</a></p></center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-22757">
+<p>You can do this in VBA, but it is too complicated for a small project like this. Pasting from the website removes the formatting anyway.<a href="#fnr1-22757" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-22758">
+<p>Please vote for this to be added <a href="https://excel.uservoice.com/forums/304933-excel-for-mac/suggestions/8995483-add-support-for-power-query">here</a>!<a href="#fn2-22758" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

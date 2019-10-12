@@ -1,0 +1,80 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">May 5, 2016</time>
+<title>How To Deal with File Sizes in Excel</title>
+<h1 class="article_title">How To Deal with File Sizes in Excel</h1>
+
+<p>The only metric I have to gauge traffic to this website is <a href="http://www.awstats.org">AWStats</a>, an open-source logfile analyzer that runs through my CPanel. I <a href="https://chrissardegna.com/blog/statement.html">do not</a> use any other forms of tracking. </p>
+
+<p>AWstats is a great tool because it can generate charts and tables of various data. It is simple, lightweight, and <a href="http://www.nltechno.com/awstats/awstats.pl?config=destailleur.fr">easy to operate</a>. There is one problem that will impact users’ ability to visualize trends in the data, however:</p>
+
+<figure>
+<img src="http://chrissardegna.com/blog/posts/file-sizes-in-excel/img/awstats.png" alt="5 days of traffic statistics from May 2016" />
+<figcaption>5 days of traffic statistics from May 2016</figcaption>
+</figure>
+
+<p>Excel interprets the bandwidth column as a string and not a type of file size. Excel does not understand file sizes by default either, so to visualize bandwidth data the entire column needs to be converted formulaically.</p>
+
+<p>Luckily, this can be accomplished with a series of nested <code>=IF</code> statements that determine the size the letters denote and multiply or divide the numbers by the correct amount:</p>
+
+<pre><code>=(IF(RIGHT(F3,2)="MB",LEFT(F3,(FIND(" ",F3,1)-1)),IF(RIGHT(F3,2)="KB",LEFT(F3,(FIND(" ",F3,1)-1))/1024,IF(RIGHT(F3,2)="GB",LEFT(F3,(FIND(" ",F3,1)-1))*1024,0))))*1</code></pre>
+
+<p>This formula uses MB as the default unit.<sup><a href="#fn91693" id="fnr91693" title="see footnote" class="footnote">1</a></sup> If the formula sees the letters <code>&quot;MB&quot;</code> it will take all of the numbers to the left of the <code>space</code> character. If it does not meet this case, it checks for <code>&quot;KB&quot;</code>. If it finds a match, it takes the all of the numbers to the left of the first <code>space</code> character and divides it be 1024 to get the proper quantity in MB. If it still has not found a match, the formula checks for <code>&quot;GB&quot;</code>. If it finds a match, it multiplies all of the numbers to the left of the first <code>space</code> character by 1024 to get the quantity in MB. Finally, if no matches are found, the formula outputs 0. Multiplying this result by 1 ensures it is changed from a string of numbers to a number.</p>
+
+<p>The entire data source is now 5 columns. To visualize this, select the relevant data and build a new chart. In the Data Source Selector delete the original text-formatted column so it looks like this:</p>
+
+<figure>
+<img src="http://chrissardegna.com/blog/posts/file-sizes-in-excel/img/dataselect.png" alt="Data Source Selector without original improperly formatted Bandwidth column" />
+<figcaption>Data Source Selector without original improperly formatted Bandwidth column</figcaption>
+</figure>
+
+<p>To better visualize the data, use a log scale. This allows charts that plot large spreads to be more easily consumed, as massive spikes will not obscure small changes. Apply some visual styling and voila!</p>
+
+<figure>
+<img src="http://chrissardegna.com/blog/posts/file-sizes-in-excel/img/traffic.png" alt="Traffic chart for this website using a log scale." />
+<figcaption>Traffic chart for this website using a log scale.</figcaption>
+</figure>
+
+<p>This equation would be made much simpler by the <code>=IFS</code> <a href="https://support.office.com/en-us/article/IFS-function-36329a26-37b2-467c-972b-4a39bd951d45">function</a>, which is only available on Windows at this point. Hopefully, in the future, Microsoft will also allow Excel to interpret file sizes properly.</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn91693">
+<p>I chose this because it was by far the most common in my data. <a href="#fnr91693" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

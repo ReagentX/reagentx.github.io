@@ -1,0 +1,117 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">November 30, 2016</time>
+<title>Optimizing CS:GO Case Purchase Prices</title>
+<h1 class="article_title">Optimizing CS:GO Case Purchase Prices</h1>
+<div class="TOC">
+<ul>
+<li><a href="#designing-the-spreadsheet">Designing the Spreadsheet</a>
+
+<ul>
+<li><a href="#quantity-calculator">Quantity Calculator</a>
+
+<ul>
+<li><a href="#analytical-formulas">Analytical Formulas</a></li>
+<li><a href="#calculating-efficient-prices">Calculating Efficient Prices</a></li>
+</ul></li>
+<li><a href="#price-calculator">Price Calculator</a></li>
+</ul></li>
+<li><a href="#download">Download</a></li>
+</ul>
+</div>
+
+<p>With the recent release of the new <a href="https://blog.counter-strike.net/index.php/2016/11/17081/">Glove</a> case and the subsequent (expensive) case-opening videos, it is becomes important to analyze when and at what price to purchase volumes of pricey digital goods. The easiest way to accomplish this feat is to use Microsoft <a href="https://products.office.com/en-us/excel">Excel</a>, which provides the analytical components needed to calculate the relevant information.</p>
+
+<h2 id="designing-the-spreadsheet">Designing the Spreadsheet</h2>
+
+<p>I separated the spreadsheet into two sections for clarity. The first part focusses on calculating the optimal quantity to purchase at a given price point, the second part focusses on calculating the optimal price at a given quantity. The first part also calculates the volume cost at any given price point.</p>
+
+<h3 id="quantity-calculator">Quantity Calculator</h3>
+
+<p>First, create three variables: <code>Case Cost</code>, <code>Key Cost</code><sup><a href="#fn1-28575" id="fnr1-28575" title="see footnote" class="footnote">1</a></sup>, and <code>Budget</code>. These variables are the only user inputs. </p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/optimizing-case-purchase-prices/img/qc_1.png" alt="" />
+</figure>
+
+<p>All of the math takes place below this. The blue table calculates the cost of opening a given number of cases using the formula <code>=(B8*$B$5)+(B8*$C$5)</code>. This multiplies the case cost by the number of cases and adds it to the cost of buying the same number of keys. Thus, the table calculates the exact cost to open a given number of cases at the given price point. </p>
+
+<h4 id="analytical-formulas">Analytical Formulas</h4>
+
+<p>To determine the proportion of the value of the key to the case, the formula <code>=(B8*C$5)/C8</code> divides the cost of a given number of keys by the total cost of opening a case. This only happens once because the ratio does not change when the prices are constant.</p>
+
+<p>An array formula determines the maximum number of keys purchasable within the given budget. This formula is far more complicated:</p>
+
+<pre><code>=IF(VLOOKUP(INDEX(B8:B155,MATCH(MIN(ABS(C8:C155-$D$5)),ABS(C8:C155-$D$5),0)),B7:C155,2,FALSE)&gt;$D$5,INDEX(B8:B155,MATCH(MIN(ABS(C8:C155-$D$5)),ABS(C8:C155-$D$5),0))-1,INDEX(B8:B155,MATCH(MIN(ABS(C8:C155-$D$5)),ABS(C8:C155-$D$5),0)))</code></pre>
+
+<p>This uses a nested <code>INDEX MATCH</code> to find the number of cases that has the smallest absolute value deviation from the given budget that is also less than the budget. The next cell over uses <code>=VLOOKUP(E11,Table1,2,FALSE)</code> to get the cost of opening that quantity of cases at the given price. This summarizes the relevant values from the table to make them more legible.</p>
+
+<h4 id="calculating-efficient-prices">Calculating Efficient Prices</h4>
+
+<p>Finally, the spreadsheet calculates the most efficient price at which the possible quantity can be purchased at. For example, in the screenshot above, the current case price is $3. With the budget of $35, a maximum of six cases can be opened. The efficient prices is the lowest price at which the current possible number of cases can be purchased at. In the screenshot, the efficient price section states that the lowest cost to buy the six openable cases is $2.52. Compared to the current price, this would save $2.88. Thus, it is more efficient to wait until the price drops to $2.52 to open six cases with the given budget.</p>
+
+<p>The calculation is somewhat complicated:</p>
+
+<pre><code>=ROUNDUP((D5-((E11+1)*C5))/(E11+1),2)+IF(ROUNDUP((D5-((E11+1)*C5))/(E11+1),2)=(D5-((E11+1.01)*C5))/(E11+1),1,0)+0.01</code></pre>
+
+<p>This formula takes the given user inputs and calculates the cost of keys. It then solves for the maximum variable cost for the cases and divides this by the number of units desired, which results in the most efficient price. This does the exact same calculations as the price calculator below, only merged into one cell.</p>
+
+<h3 id="price-calculator">Price Calculator</h3>
+
+<p>The price calculator allows users to define a quantity, budget, and key price and solves for an efficient price. </p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/optimizing-case-purchase-prices/img/pc_1.png" alt="" />
+</figure>
+
+<p>These formulas are far more straightforward. The first calculation uses <code>=IF((K5+1)*K7&gt;K6,&quot;Costs more than budget!&quot;,(K5+1.01)*K7)</code> to determine the cost of keys to open one more than the desired quantity of cases. If the cost of keys exceeds the given budget it returns an error. </p>
+
+<p>Next, to calculate the maximum variable cost of one more than the desired quantity of cases, <code>=K6-K10</code> finds the difference from the budget to the key cost. Finally, the third calculation divides the maximum variable cost of cases by the number of cases desired. This results in the minimum price at which the given number of cases can be purchased. </p>
+
+<p>The results summarize the efficient price, the total cost of opening the given number of cases, and the ratio of the cost of a key to the cost of a case.</p>
+
+<h2 id="download">Download</h2>
+
+<p>You can access the spreadsheet to do your own calculations <a href="https://docs.com/christopher-sardegna/2205/csgo-case-calculator">here</a>. Enjoy!</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-28575">
+<p>Case keys are $2.49, but the community market lists higher prices as a result of non-CSGO players trading. Community market keys also do not activate trade holds on uncrated items. <a href="#fnr1-28575" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+
+</body>
+</html>

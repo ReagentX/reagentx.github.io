@@ -1,0 +1,127 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">January 11, 2018</time>
+<title>Exploring CS:GO Player Consistency During 2017</title>
+<h1 class="article_title">Exploring CS:GO Player Consistency During 2017</h1>
+<div class="TOC">
+<ul>
+<li><a href="#data-used">Data Used</a>
+
+<ul>
+<li><a href="#measurement">Measurement</a></li>
+<li><a href="#categories">Categories</a></li>
+</ul></li>
+<li><a href="#analysis">Analysis</a>
+
+<ul>
+<li><a href="#rating">Rating</a></li>
+</ul></li>
+</ul>
+</div>
+
+<p>One important and often unmeasured aspect of player performance in Counter-Strike: Global Offensive is consistency of performance. The ability to perform well in individual matches at critical moments is important, but consistently performing at a high level of skill creates a statistical divide between lucky players and highly skilled players. As a result, measuring empirical variance is an important aspect to determining a player’s skill level.</p>
+
+<h1 id="data-used">Data Used</h1>
+
+<p>Data comes from my <a href="https://www.kaggle.com/reagentx/HLTVData">stats database</a> and includes all matches that were played during 2017. To narrow down the number of teams we focus on, only the top 25 teams ranked by our Glicko2 skill model are included. Finally, players must have more than 50 maps to be plotted.</p>
+
+<p>Since teams change their lineups over the course of the year, players are placed on the chart based on their team. This means that players like GuardiaN show up twice: once under FaZe and once under NaVi. This also means that teams like NRG have more than 5 players on the graph since their lineup has been altered.</p>
+
+<h2 id="measurement">Measurement</h2>
+
+<p>To measure player consistency, we borrow a concept from probability theory called the <a href="https://en.wikipedia.org/wiki/Coefficient_of_variation">coefficient of variation</a> (CV). This measures a player’s standardized performance dispersion. Since this is a rather large and normal sample, this model uses the unbiased form of the coefficient of variation equation:</p>
+
+<figure>
+<img src="img/cv2.png" alt="" />
+</figure>
+
+<p>The result of this means that lower CV values result in less variation in performance, indicating a higher degree of consistency. As the CV increases, players become less and less consistent. This means we now have an empirical range with which we can determine the ability of players to perform consistently at a given level of performance.</p>
+
+<h2 id="categories">Categories</h2>
+
+<p>Since this is an abstract statistical concept we can apply it to any given range of player performance measures. This analysis focuses on those popularized by HLTV: K/D<sup><a href="#fn1-4031" id="fnr1-4031" title="see footnote" class="footnote">1</a></sup>, ADR, KAST%, and Rating. Each chart uses the same formula for CV described above where each player is plotted based on their performance under a given team during the year.</p>
+
+<h1 id="analysis">Analysis</h1>
+
+<p>The data breaks down into four quadrants, in the top left we have players with a low average value and high consistency. Players in the top right have higher average ratings with similarly high consistency. Players in the lower half also follow this pattern of average values, only with lower consistency. Put simply: the further right a player is, the higher their average value for that metric; the further up they are, the more consistent a player performs with regard to that metric.</p>
+
+<p>To view a fullscreen interactive version of this visualization, <a href="https://public.tableau.com/profile/christopher.sardegna/#!/vizhome/CSGOPlayerPerformanceConsistency/CSGOPlayerConsistencyin2017">click here</a>. On the webpage you can highlight individual players or teams as well as adjust the matches played filter to expand or contract the number of players featured in the chart.</p>
+
+<h2 id="rating">Rating</h2>
+
+<figure>
+<img src="img/rating.png" alt="" />
+</figure>
+
+<p>Xantares, the player with the highest average rating in the data, is also extremely close to the average when it comes to consistency. This is not because he suffers from poor performances: only 20% of his performances fell below the average rating of <code>1.06</code><sup><a href="#fn2-4031" id="fnr2-4031" title="see footnote" class="footnote">2</a></sup>. Rather, Xantares fell victim to his own success: a plethora of ratings (almost 10% of his maps) are above 2 on the Rating 2.0 scale. This means that these higher ratings are punishing him with regard to his consistency. Most players do not have as many ratings above 2.0, which means this is a unique case of a player being too good for the rating system to account for.</p>
+
+<figure>
+<img src="img/ssrating.png" alt="" />
+</figure>
+
+<p>On the other side of things, Zeus’s stint on NaVi has been troubling for him. While his performance on Mousesports was relatively lackluster, his average rating of <code>0.88</code> on NaVi was the worst in the dataset. Compounding this, he was also the second most consistent player overall with a CV of <code>0.31</code>. This means that the most consistent player in the top 25 teams was the worst player as far as ratings are considered. Causal variables aside, it is interesting to see how he was underperforming on NaVi.</p>
+
+<figure>
+<img src="img/zeusrating.png" alt="" />
+</figure>
+
+<p>Another player that was underperforming on NaVi was GuardiaN. In 2017, he boasted an average rating of <code>1.09</code> with a coefficient of variation of <code>0.43</code> on NaVi. Under FaZe, his average rating increased to <code>1.19</code> with a coefficient of variation of <code>0.31</code>, making him the most consistent player in the dataset. Not only has he performed better under the FaZe roster, but also with more consistency.</p>
+
+<figure>
+<img src="img/guardianrating.png" alt="" />
+</figure>
+
+<p>Virtus Pro, the lowest rated team to be included in the dataset, entirely populates the bottom quadrant. The veteran lineup was unable to perform successfully through the year and the numbers bear that out, as their team’s average rating fall <code>0.08</code> below the population average. The team’s CV also indicates below average consistency.</p>
+
+<figure>
+<img src="img/vprating.png" alt="" />
+</figure>
+
+<hr />
+
+<p>It is important to consider the coefficient of variation alongside the metric used to calculate it. Consistency alone does not paint the entire picture, but combined with other metrics means it can tell a story about which players are empirically world-class.</p>
+<center><p>Discussion: <a href="">/r/GlobalOffensive</a> | View as: <a href="">PDF</a>, <a href="">Markdown</a></p></center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-4031">
+<p>Note that 7 players with &gt; 20 K/D had these respective results ignored since they skew the data too much. CV is sensitive to outliers and maps where players have 1 or fewer deaths are too infrequent to include. <a href="#fnr1-4031" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-4031">
+<p>Note that the average Rating 2.0 is not 1.0 as <a href="https://web.archive.org/web/20170614185516/https://www.hltv.org/news/20695/introducing-rating-20/">claimed</a> by HLTV <a href="https://twitter.com/rxcs/status/949008947821690880">but rather</a> 1.06. <a href="#fnr2-4031" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

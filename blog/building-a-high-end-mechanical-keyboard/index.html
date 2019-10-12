@@ -1,0 +1,474 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">August 3, 2018</time>
+<title>Building a High-End Mechanical Keyboard</title>
+<h1 class="article_title">Building a High-End Mechanical Keyboard</h1>
+<div class="TOC">
+<ul>
+<li><a href="#why-mechanical">Why Mechanical</a>
+
+<ul>
+<li><a href="#definition">Definition</a></li>
+<li><a href="#variation">Variation</a></li>
+</ul></li>
+<li><a href="#part-selection">Part Selection</a>
+
+<ul>
+<li><a href="#keycaps">Keycaps</a></li>
+<li><a href="#case">Case</a></li>
+<li><a href="#pcb">PCB</a></li>
+<li><a href="#stabilizers">Stabilizers</a></li>
+<li><a href="#switches">Switches</a>
+
+<ul>
+<li><a href="#noise-reduction">Noise reduction</a></li>
+</ul></li>
+<li><a href="#summary">Summary</a></li>
+</ul></li>
+<li><a href="#assembly">Assembly</a>
+
+<ul>
+<li><a href="#switch-installation">Switch Installation</a></li>
+<li><a href="#stabilizers">Stabilizers</a></li>
+<li><a href="#soldering">Soldering</a></li>
+<li><a href="#programming">Programming</a>
+
+<ul>
+<li><a href="#building-our-keycap">Building our keymap</a></li>
+</ul></li>
+<li><a href="#testing">Testing</a></li>
+<li><a href="#case-assembly">Case Assembly</a></li>
+</ul></li>
+<li><a href="#gallery">Gallery</a></li>
+</ul>
+</div>
+
+<p>A staple for anyone who uses a computer for any meaningful amount of time, keyboards provide the most important way we interact with our most powerful devices. Whether we <em>tick</em> quietly on a modern thin laptop or <em>thock</em> emphatically on an ancient beamspring <sup><a href="#fn1-1681" id="fnr1-1681" title="see footnote" class="footnote">1</a></sup>, we leverage the same devices for hours each day without giving them the assiduity they deserve. However, what if that wasn’t the case? Enter the mechanical keyboard.</p>
+
+<h1 id="why-mechanical">Why Mechanical</h1>
+
+<h2 id="definition">Definition</h2>
+
+<p>While <em>technically</em> all keyboards are mechanical (as our hands are also technically mechanical<sup><a href="#fn2-1681" id="fnr2-1681" title="see footnote" class="footnote">2</a></sup>), <em>mechanical keyboards</em> are narrowly defined as a keyboard which uses an individual spring and switch for each key<sup><a href="#fn3-1681" id="fnr3-1681" title="see footnote" class="footnote">3</a></sup>.</p>
+
+<h2 id="variation">Variation</h2>
+
+<p>There are many <a href="https://deskthority.net/wiki/Category:List_of_all_keyboard_switches">different variants</a> of switches available, of varying makes and qualities. These are differentiated by weight<sup><a href="#fn4-1681" id="fnr4-1681" title="see footnote" class="footnote">4</a></sup> and tactility<sup><a href="#fn5-1681" id="fnr5-1681" title="see footnote" class="footnote">5</a></sup>.</p>
+
+<figure>
+<img src="img/switches.png" alt="" />
+</figure>
+
+<p>Three categories dominate the selection: linear, tactile, and clicky <sup><a href="#fn6-1681" id="fnr6-1681" title="see footnote" class="footnote">6</a></sup>. It is easy to see the difference between these types of switches through their various <a href="http://www.wasdkeyboards.com/mechanical-keyboard-guide#comparison">force graphs</a>. Here is an approximation of the way the three main switches actuate:</p>
+
+<p><img src="img/forcegraph.png" alt="" /></p>
+
+<blockquote>
+<p>Tactile: Kailh BOX Royal, Clicky: Kailh Sage, Linear: Kailh Berry</p>
+
+<p>Source: <a href="https://deskthority.net/photos-f62/the-problem-with-mechanical-switch-reviews-t15133.html">HaaTa</a>’s detailed research</p>
+</blockquote>
+
+<p>Linear switches exhibit the same force delta for the duration of the press. Tactile and clicky switches both demonstrate deltas that change during the press, thus creating the feeling of a bump. Generally, this bump indicates that the switch has been activated. This is the main advantage mechanical keyboards have over traditional rubber domes: longer, smoother key travel punctuated by a precise moment of activation. This means there is room to continue pressing after the keypress, which means you do not have to fully depress a key to activate it. As a result, your fingers never have to exert more than the minimum amount of force, thus theoretically reducing finger stress while typing.</p>
+
+<h1 id="part-selection">Part Selection</h1>
+
+<p>While there are many readily available boards on the <a href="https://mechanicalkeyboards.com">market</a>, there is something to be said about selecting parts and assembling a device, especially one in use all day every day. Several different vendors design and manufacture premium quality mechanical keyboard parts that are not found in any mass-produced board. Since the part designs are standardized by <a href="https://www.iso.org/ics/35.180/x/">ISO</a> (and subsequently <a href="https://webstore.ansi.org/RecordDetail.aspx?sku=INCITS+154-1988%5BS2009%5D">ANSI</a>), it is not very troublesome to use parts from several different vendors.</p>
+
+<h2 id="keycaps">Keycaps</h2>
+
+<p>The most visible part of a keyboard is the keycaps. These are the plastic tops that attach to the switches and display various legends<sup><a href="#fn7-1681" id="fnr7-1681" title="see footnote" class="footnote">7</a></sup>. There are many great sets and designers, but Mito’s <a href="https://mitormk.com/laser-gmk/">Laser</a> caught my eye.</p>
+
+<figure>
+<img src="img/laser.png" alt="" />
+</figure>
+
+<p>This set is manufactured in Germany by an electronic design company called <a href="https://www.gmk-electronic-design.de/en/products.html">GMK</a>. The material used is <a href="https://en.wikipedia.org/wiki/Acrylonitrile_butadiene_styrene">ABS</a>, an impact-resistant plastic. The legends are not printed with ink: rather they are molded into the plastic in a process called double-shot molding <sup><a href="#fn8-1681" id="fnr8-1681" title="see footnote" class="footnote">8</a></sup>.</p>
+
+<figure>
+<img src="img/doubleshot.png" alt="" />
+</figure>
+
+<p>This means the legends will never wear down. The thicker plastic used in the molding process also means the keys are more rigid, which provides a more precise feeling typing experience. The plastic is also textured, which makes it preferable to type on.</p>
+
+<h2 id="case">Case</h2>
+
+<p>The second most visible part of a keyboard is the case. This houses the PCB and provides stability so that the keyboard does not slide around on the desk. They also can be made to look very unique and nice, which makes the keyboard stand out even more. I went with the KBDFans model 661, an updated take on the model 66 case. Here is a render of the design:</p>
+
+<figure>
+<img src="img/case.png" alt="" />
+</figure>
+
+<p>The case uses a separate top and bottom part to sandwich the plate that holds the switches:</p>
+
+<figure>
+<img src="img/case2.png" alt="" />
+</figure>
+
+<p>Since this is milled out of aluminum, it can be anodized any color — most importantly, dark purple.</p>
+
+<h2 id="pcb">PCB</h2>
+
+<p>While a PCB is not a requirement to build a keyboard<sup><a href="#fn9-1681" id="fnr9-1681" title="see footnote" class="footnote">9</a></sup>, it makes it far easier to do so. I went with the original KBD66 PCB. It also already has the SMD components pre-soldered so only switches need to be added. The only downside is that the switch pads are inverted from the normal orientation such that the switches are oriented upside down.</p>
+
+<figure>
+<img src="img/pcb.png" alt="" />
+</figure>
+
+<p>It supports several useful layouts, programmable using the open-source <a href="https://qmk.fm/">QMK Firmware</a>:</p>
+
+<figure>
+<img src="img/layouts.png" alt="" />
+</figure>
+
+<p>For this build, I chose a non-split left and right shift and a standard ANSI enter key. Split spacebar layouts are not possible with the plate that the KBD 661 case uses.</p>
+
+<h2 id="stabilizers">Stabilizers</h2>
+
+<p>Since switches only attach to a keycap in the very center, longer keys require a <a href="https://deskthority.net/wiki/Stabiliser">leveling mechanism</a> (colloquially: stabilizer) to balance properly and also actuate when not pressed in the exact center. The left shift key and the space bar are notable long keys that require stabilizers.</p>
+
+<figure>
+<img src="img/stab.png" alt="" />
+</figure>
+
+<p>Cherry, another German electronics manufacturer, makes high-quality stabilizers that screw into the PCB in lieu of clipping into it. This gives the stabilizer added stability in addition to its intended purpose. Applying a lubricant like dielectric grease can help reduce the added friction stabilizers cause during the keypress.</p>
+
+<h2 id="switches">Switches</h2>
+
+<p>Since this keyboard will mainly be used in an office environment, a clicky option is not a reasonable choice. Since one of the main advantages of a mechanical board is precise tactility, I chose to use a tactile switch in this build. The baseline tactile switch is Cherry’s MX Brown switch; however, this tends to feel scratchy and does not have a very pronounced bump. On the other end of the spectrum, ZealPC manufactures high-end switches using Gateron housings. Their switches use different springs, leaves, and stems than MX Browns, which makes them far smoother and more tactile.</p>
+
+<figure>
+<img src="img/zealstem.png" alt="" />
+</figure>
+
+<p>The quality difference is evinced in the force graphs of the two switches:</p>
+
+<figure>
+<img src="img/forcegraph_comparison.png" alt="" />
+</figure>
+
+<p>Here is how the ZealPC switch compares with the first three switches above:</p>
+
+<figure>
+<img src="img/forcegraph_zeal.png" alt="" />
+</figure>
+
+<p>Overall it performs admirably: smooth like a good linear while also decently tactile and quiet. </p>
+
+<h3 id="noise-reduction">Noise reduction</h3>
+
+<p>There are two options for reducing the noise from non-clicky switches. <a href="https://www.amazon.com/Cherry-Rubber-Ring-Switch-Dampeners/dp/B00AZQ2OF8">O-rings</a> are cheap, but they reduce overall key travel and make the downstroke feel mushy. The alternative solution are QMK’s <a href="https://uniqey.net/en/accessories/17/qmx-clips-pcb-mount-110-pcs.">silencing clips</a>. These cost more, but reduce noise without the adverse effects O-rings. Since the Laser keycaps are Cherry profile, QMK Clips will work without any problems.</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>Here is a parts list for this build<sup><a href="#fn10-1681" id="fnr10-1681" title="see footnote" class="footnote">10</a></sup>:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Part</th>
+	<th style="text-align:left;">Model</th>
+	<th style="text-align:left;">Price</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">Case/PCB</td>
+	<td style="text-align:left;">KBD 661</td>
+	<td style="text-align:left;"><a href="https://kbdfans.cn/products/pre-orderkbd661-custom-mechanical-keyboard-kit">$160</a></td>
+</tr>
+<tr>
+	<td style="text-align:left;">Stabilizers</td>
+	<td style="text-align:left;">GMK Screw-in</td>
+	<td style="text-align:left;"><a href="https://novelkeys.xyz/products/cherry-stabilizers">$18</a></td>
+</tr>
+<tr>
+	<td style="text-align:left;">Keycaps</td>
+	<td style="text-align:left;">GMK Laser</td>
+	<td style="text-align:left;"><a href="https://www.massdrop.com/buy/massdrop-x-mito-gmk-laser-custom-keycap-set">$180</a></td>
+</tr>
+<tr>
+	<td style="text-align:left;">Switches</td>
+	<td style="text-align:left;">Zealio 65g</td>
+	<td style="text-align:left;"><a href="https://zealpc.net/collections/switches/products/zealio">$60</a></td>
+</tr>
+<tr>
+	<td style="text-align:left;">Silencers</td>
+	<td style="text-align:left;">QMK Clips</td>
+	<td style="text-align:left;"><a href="https://novelkeys.xyz/collections/miscellaneous/products/qmx-clips-plate-mount">$30</a></td>
+</tr>
+<tr>
+	<td style="text-align:left;">Total</td>
+	<td style="text-align:left;"></td>
+	<td style="text-align:left;">$448</td>
+</tr>
+</tbody>
+</table>
+
+<p>Now, let’s put it all together!</p>
+
+<h1 id="assembly">Assembly</h1>
+
+<p>Before beginning, I like to lay out all of the parts and marvel at how nice it is I can get a brick of aluminum shipped from China on my doorstep in 3 days.</p>
+
+<figure>
+<img src="img/steps/1.png" alt="" />
+</figure>
+
+<p>Without further ado, let's get to work!</p>
+
+<h2 id="switch-installation">Switch Installation</h2>
+
+<p>The first step is to add the switches to the plate since the plate helps keep the switches stable and aligned. </p>
+
+<figure>
+<img src="img/steps/2.png" alt="" />
+</figure>
+
+<p>The Zealio switches support PCB mounting; they do not need a plate. They have additional legs that allow them to sit flush with the PCB:</p>
+
+<figure>
+<img src="img/steps/3.png" alt="" />
+</figure>
+
+<p>However, the plate adds additional stability on top of keeping things organized neatly, so we will use the provided stamped aluminum plate.</p>
+
+<figure>
+<img src="img/steps/4.png" alt="" />
+</figure>
+
+<p>Note that the KBD 660 PCB orients the switches upside down, so the underside of the plate should look like this:</p>
+
+<figure>
+<img src="img/steps/5.png" alt="" />
+</figure>
+
+<p>For the longer open parts of the plate that allow for multiple positions, we leave the switches out until we can fit them in with the plate before soldering to ensure they are lined up correctly.</p>
+
+<p>Finally, we add the silencing clips over the top of each switch. This will cut down the noise from each keystroke and protect the switches from damage.</p>
+
+<figure>
+<img src="img/steps/11.png" alt="" />
+</figure>
+
+<p>The next step is to prepare the PCB.</p>
+
+<h2 id="stabilizers">Stabilizers</h2>
+
+<p>To prepare our PCB for switch installation, we need to add the PCB mounted leveling mechanism.</p>
+
+<p>The stabilizers are essential to get right to ensure the longer keys are quiet and comfortable to use. To optimize the stability and noise of the Cherry stabilizers, we use a medium viscosity plastic lubricant like dielectric grease<sup><a href="#fn11-1681" id="fnr11-1681" title="see footnote" class="footnote">11</a></sup>.</p>
+
+<figure>
+<img src="img/steps/6.png" alt="" />
+</figure>
+
+<p>All parts of the stabilizers that move have grease on them. This prevents the parts from clicking together and echoing as well as ensure smooth vertical travel.</p>
+
+<h2 id="soldering">Soldering</h2>
+
+<p>The most difficult part is lining up all of the switch legs to their holes in the PCB. Slowly lower the PCB on top of the back of the switches until the switch housings are flush against the PCB:</p>
+
+<figure>
+<img src="img/steps/7.png" alt="" />
+</figure>
+
+<p>To line up the switches we left out earlier, use the relevant keycaps to ensure the switches are in the proper places:</p>
+
+<figure>
+<img src="img/steps/8.png" alt="" />
+</figure>
+
+<p>Once the switches are all pressed into the PCB, we can carefully begin to solder all of them into their respective places. This build does not include LEDs, but they would be soldered in this stage too if it included some.</p>
+
+<figure>
+<img src="img/steps/9.png" alt="" />
+</figure>
+
+<p>Here is a photo of the finished board I used to troubleshoot some issues<sup><a href="#fn12-1681" id="fnr12-1681" title="see footnote" class="footnote">12</a></sup>:</p>
+
+<figure>
+<img src="img/steps/10.png" alt="" />
+</figure>
+
+<h2 id="programming">Programming</h2>
+
+<p>Once we have soldered in all of the parts, we can start to build and flash the firmware onto the atmega32u4 controller. </p>
+
+<h3 id="building-our-keycap">Building our keymap</h3>
+
+<p>The keyboard supports the open-source <a href="https://github.com/qmk/qmk_firmware">QMK Firmware</a>. We can leverage <a href="http://www.qmkeyboard.cn">qmkeyboard.cn</a> to design and compile our firmware online to avoid writing C like we are in the 90s<sup><a href="#fn13-1681" id="fnr13-1681" title="see footnote" class="footnote">13</a></sup>. I used the following keymaps:</p>
+
+<p><img src="img/l0.png" alt="" /></p>
+
+<p><img src="img/l1.png" alt="" /></p>
+
+<p>In this example, the top image is layer 0 and the bottom image is layer 1. The split keys are not used. Anything labeled <code>TRNS</code> is transparent and falls back to the previous layers<sup><a href="#fn14-1681" id="fnr14-1681" title="see footnote" class="footnote">14</a></sup>. The Mo(1) toggle on layer 0 acts like an Fn key that allows us to access l2 functions from l1 while it is pressed<sup><a href="#fn15-1681" id="fnr15-1681" title="see footnote" class="footnote">15</a></sup>. Once we download the compiled firmware, we need to flash the controller.</p>
+
+<p>To do this with a semi-GIU, we can use <a href="https://github.com/qmk/qmk_toolbox">QMK Toolbox</a>. </p>
+
+<figure>
+<img src="img/steps/12.png" alt="" />
+</figure>
+
+<p>To do this, select our compiled firmware in QMK Toolbox. Use the reset button on the back of the PCB and hold <code>space</code> and <code>b</code> to enter the bootloader mode so we can flash this firmware. If everything goes smoothly, the output should be:</p>
+
+<pre><code>*** KBDFans - KBD66 connected -- 0xFEED:0xBD66
+*** KBDFans - KBD66 disconnected -- 0xFEED:0xBD66
+*** DFU device connected
+*** Attempting to flash, please don't remove device
+&gt;&gt;&gt; dfu-programmer atmega32u4 erase --force
+    Erasing flash...  Success
+    Checking memory from 0x0 to 0x6FFF...  Empty.
+&gt;&gt;&gt; dfu-programmer atmega32u4 flash /Users/chris/Downloads/661.hex
+    Checking memory from 0x0 to 0x61FF...  Empty.
+    0%                            100%  Programming 0x6200 bytes...
+    [&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;]  Success
+    0%                            100%  Reading 0x7000 bytes...
+    [&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;]  Success
+    Validating...  Success
+    0x6200 bytes written into 0x7000 bytes memory (87.50%).
+&gt;&gt;&gt; dfu-programmer atmega32u4 reset
+</code></pre>
+
+<h2 id="testing">Testing</h2>
+
+<p>Now, before we assemble the rest of the case, we want to test to make sure every key works properly. I like to do this with Elite Keyboard’s diagnostic software called <a href="https://elitekeyboards.com/switchhitter.php">Switch Hitter</a>. It not only helps track whether a switch is working but it also can detect chatter from electrical interference or faulty switches.</p>
+
+<p>Once everything passes the requisite tests, we can assemble the case.</p>
+
+<h2 id="case-assembly">Case Assembly</h2>
+
+<p>Finally, we can break out our keycaps and attach them to the board. This is the fun part as well as the most rewarding.</p>
+
+<p>The three-piece sandwich case is easy enough to assemble. Simply attach the plate to the bottom case, cover it with the top case, and add some screws.</p>
+
+<figure>
+<img src="img/steps/13.png" alt="" />
+</figure>
+
+<p>Voila!</p>
+
+<h1 id="gallery">Gallery</h1>
+
+<p>Right-click on these photos to view them at full resolution<sup><a href="#fn16-1681" id="fnr16-1681" title="see footnote" class="footnote">16</a></sup>:</p>
+
+<p><img src="img/gallery/1.jpg" alt="" /></p>
+
+<p><img src="img/gallery/2.jpg" alt="" /></p>
+
+<p><img src="img/gallery/3.jpg" alt="" /></p>
+
+<p><img src="img/gallery/4.jpg" alt="" /></p>
+
+<p><img src="img/gallery/5.jpg" alt="" /></p>
+
+<hr />
+<center><p>Discussion: <a href="https://www.reddit.com/r/MechanicalKeyboards/comments/94ak5j/mito_cyberdeck_kbd661_zealio_65g/">/r/mk</a>, <a href="https://news.ycombinator.com/item?id=17680690">Hacker News</a> | View as: <a href="a/post.pdf">PDF</a>, <a href="a/post.md">Markdown</a></p></center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-1681">
+<p>https://deskthority.net/wiki/Beam_spring <a href="#fnr1-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-1681">
+<p>A <a href="https://en.wikipedia.org/wiki/Mechanical_system">mechanical</a> system manages power to accomplish a task that involves forces and movement. <a href="#fnr2-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-1681">
+<p>Generally, this is compared against mass-produced <a href="https://deskthority.net/wiki/Rubber_dome">rubber dome</a> keyboards, which use a sheet of rubber pressed into domes to handle switch actuation. While <a href="https://www.hhkeyboard.com">good rubber dome keyboards exist</a>, few are worth using. <a href="#fnr3-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn4-1681">
+<p>That is, the force required to actuate or fully depress a switch. <a href="#fnr4-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn5-1681">
+<p>That is, nonlinear force delta for the duration of the press. <a href="#fnr5-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn6-1681">
+<p>Clicky switches are generally tactile too, though that is not always the case. <a href="https://kbdfans.cn/products/kaihua-box-switch-blue">BOX White</a> switches are linear but use a click bar to make a click. <a href="#fnr6-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn7-1681">
+<p>Legends are the letters and symbols on top of the keycaps that indicate what the switch is for. <a href="#fnr7-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn8-1681">
+<p><a href="https://www.reddit.com/user/ripster55">/u/ripster55</a> explains this process in detail on <a href="https://www.reddit.com/r/MechanicalKeyboards/comments/2negq7/all_about_doubleshot_keys/">Reddit</a> <a href="#fnr8-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn9-1681">
+<p>It is possible to <a href="https://geekhack.org/index.php?topic=87689.0">handwire</a> and use a USB controller to build a working device. <a href="#fnr9-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn10-1681">
+<p>Prices include tax and shipping. <a href="#fnr10-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn11-1681">
+<p>I used <a href="https://www.amazon.com/gp/product/B002L5UL92/">Finish Line Extreme Fluoro</a> <a href="#fnr11-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn12-1681">
+<p>There were not any; I thought the diode above Del would cause problems. <a href="#fnr12-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn13-1681">
+<p>Secretly, I am just scared of it.<a href="#fnr13-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn14-1681">
+<p>Note that I added a reset key on Q on l1 so that we can access the bootloader in case something goes wrong, so we don’t have to open the keyboard up again later. <a href="#fnr14-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn15-1681">
+<p>Read more about the QMK advanced keycodes <a href="https://docs.qmk.fm/#/feature_advanced_keycodes">here</a>. <a href="#fnr15-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn16-1681">
+<p>Or view the album <a href="https://imgur.com/a/5KEcIzn">here</a>! <a href="#fnr16-1681" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

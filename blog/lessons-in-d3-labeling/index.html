@@ -1,0 +1,209 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">October 7, 2018</time>
+<title>Lessons in D3 Labeling</title>
+<h1 class="article_title">Lessons in D3 Labeling</h1>
+<div class="TOC">
+<ul>
+<li><a href="#the-problem">The Problem</a></li>
+<li><a href="#original-data-structure">Original Data Structure</a></li>
+<li><a href="#modified-data-structure">Modified Data Structure</a></li>
+<li><a href="#force-simulation-code">Force Simulation Code</a>
+
+<ul>
+<li><a href="#clamping">Clamping</a></li>
+<li><a href="#force-simulation-function">Force Simulation Function</a></li>
+</ul></li>
+<li><a href="#accessing-the-new-positions">Accessing the new Positions</a>
+
+<ul>
+<li><a href="#original-code">Original Code</a>
+
+<ul>
+<li><a href="#circle-position">Circle Position</a></li>
+<li><a href="#label-position">Label Position</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#conclusions">Conclusions</a></li>
+</ul>
+</div>
+
+<h1 id="the-problem">The Problem</h1>
+
+<p>When building useful charts using the Javascript <a href="https://d3js.org">D3</a> library for <a href="https://sixteenzero.net">SixteenZero</a>, I often ran into a problem where labels for data points would overlap each other, obscuring the data. In D3, this can be solved by leveraging <code>d3.forceSimulation()</code>.</p>
+
+<h1 id="original-data-structure">Original Data Structure</h1>
+
+<p>We build our charts by mapping data to an object like so:</p>
+
+<pre><code>const formattedData = Object.keys(data).map(n =&gt; ({ name: n, x: data[n], y:data[n] }));
+</code></pre>
+
+<p>In this instance, this data will be passed to a visualization as the <code>data</code> property and then scaled along the values we assign to <code>x</code> and <code>y</code>. However, for a force simulation to work, we need to add some additional data here. This data will be used to position both the dot on a 2-axis chart as well as the label that attaches to the dot.</p>
+
+<h1 id="modified-data-structure">Modified Data Structure</h1>
+
+<p>We need to add three properties to our data. First, we need to add a <code>fx</code> property, or a “fixed x”<sup><a href="#fn1-298" id="fnr1-298" title="see footnote" class="footnote">1</a></sup> that the force simulation will use when determining where to move things. We want to fix the x-axis so that the labels do not stray too far from their intended positions.</p>
+
+<p>Next, we want to change the <code>y</code> property to <code>realY</code>, because the <code>y</code> property will get overwritten by the force simulation and we want the original data to position the dot with. This is because we only want to modify the values for the label’s <code>y</code> and not that of the dot’s <code>y</code> since the dot is the actual data point.</p>
+
+<p>Finally, we want to add a property called <code>targetY</code>, which represents the scaled Y value of where we want the label to be. The force simulation will use this value to place the label as close as it can to the <code>targetY</code> value. Since this is the scaled value and not the actual value, we convert it using the normal scale function (i.e. <code>targetY: yScale(data[n])</code>):</p>
+
+<pre><code>const yScale = d3.scaleLinear()
+                 .domain([yMinValue, yMaxValue])
+                 .rangeRound([0, height]);
+</code></pre>
+
+<p>The result is that our data should now look like this:</p>
+
+<pre><code>const formattedData = Object.keys(data).map(n =&gt; ({ name: n, fx: data[n], x: data[n], realY: data[n], targetY: yScale(data[n]) }));
+</code></pre>
+
+<p>Once we have the data ready, we can write our force simulation code.</p>
+
+<h1 id="force-simulation-code">Force Simulation Code</h1>
+
+<p>This describes the steps we need to take to properly arrange labels without disturbing their associated points.</p>
+
+<h2 id="clamping">Clamping</h2>
+
+<p>We do not want the force simulation to place labels outside of the boundaries of the chart, so we use the following function to prevent that from occurring:</p>
+
+<pre><code>const forceClamp = (min, max) =&gt;
+{
+    let nodes;
+    const force = () =&gt;
+    {
+        nodes.forEach((n) =&gt;
+        {
+            if (n.y &gt; max) { n.y = max; }
+            if (n.y &lt; min) { n.y = min; }
+        });
+    };
+    force.initialize = f =&gt; nodes = f;
+    return force;
+};
+</code></pre>
+
+<h2 id="force-simulation-function">Force Simulation Function</h2>
+
+<p>This is the actual force simulation function. In this case, <code>formattedData</code> is the modified data structure described above, <code>labelFontHeight</code> is the size of the font used in the labels, and <code>d.targetY</code> accesses the scaled <code>targetY</code> property.</p>
+
+<pre><code>const force = d3.forceSimulation()
+                .nodes(formattedData)
+                .force('collide', d3.forceCollide(labelFontHeight / 2))
+                .force('y', d3.forceY(d =&gt; d.targetY).strength(3))
+                .force('clamp', forceClamp(0, height))
+                .stop();
+
+for (let i = 0; i &lt; 300; i += 1) { force.tick(); }
+</code></pre>
+
+<p>This force runs for 300 ticks, which is the generally enough to have proper label placement. Higher numbers also generally mean more accurate placement.</p>
+
+<h1 id="accessing-the-new-positions">Accessing the new Positions</h1>
+
+<p>This code generates a new <code>y</code> property that we need to access to place the labels in the new force-directed positions.</p>
+
+<h2 id="original-code">Original Code</h2>
+
+<p>The original code for the visualization accessed the <code>y</code> properties of the data structure and scaled them using <code>yScale()</code>:</p>
+
+<pre><code>const dotDivs = g.selectAll('.dot')
+                 .data(formattedData)
+                 .enter().append('g');
+dotDivs.append('circle')
+       .attr('class', 'scatter-dot')
+       .attr('r', 2)
+       .attr('cx', d =&gt; xScale(d.x))
+       .attr('cy', d =&gt; height - yScale(y))
+       .style('visibility', 'hidden')
+       .attr('id', (d, i) =&gt; `scatter-dot-${i}`);
+
+const imgWidth = 30;
+dotDivs.append('text')
+       .attr('class', 'scatter-label')
+       .attr('x', d =&gt; xScale(d.x) + imgWidth / 3)
+       .attr('y', d =&gt; (height - yScale(d.y)) + imgWidth / 3)
+       .attr('alignment-baseline', 'hanging')
+       .attr('id', (d, i) =&gt; `scatter-text-${i}`)
+       .text(d =&gt; d.name);
+</code></pre>
+
+<p>Since we are only trying to move the label<sup><a href="#fn2-298" id="fnr2-298" title="see footnote" class="footnote">2</a></sup> and not the dot<sup><a href="#fn3-298" id="fnr3-298" title="see footnote" class="footnote">3</a></sup>, we need to only change two lines:</p>
+
+<h3 id="circle-position">Circle Position</h3>
+
+<pre><code>.attr('cy', d =&gt; height - yScale(y))
+</code></pre>
+
+<p>Would become:</p>
+
+<pre><code>.attr('cy', d =&gt; height - yScale(d.realY))
+</code></pre>
+
+<p>because we want to access the original <code>y</code> value, i.e., the actual position the data should be in.</p>
+
+<h3 id="label-position">Label Position</h3>
+
+<pre><code>.attr('y', d =&gt; (height - yScale(d.y)) + imgWidth / 3)
+</code></pre>
+
+<p>Would become:</p>
+
+<pre><code>.attr('y', d =&gt; (height - d.y) + imgWidth / 3)
+</code></pre>
+
+<p>We do not need to use <code>yScale()</code> here because the force direction function already targeted the proper coordinates due to how we set <code>yScale(targetY)</code> in the modified data structure.</p>
+
+<h1 id="conclusions">Conclusions</h1>
+
+<p>There are probably more ways to accomplish this task, but this works for both bar graphs where the axis labels are all along a single axis in a column as well as in a scatter plot where the data points can be at any <code>(x, y)</code> pair. It is fast and easy to implement, generally involving only tuning the <code>strength()</code> constant in <code>forceSimulation()</code>.</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-298">
+<p><code>fx</code> is a reserved term in d3 that tells the force function to not move the coordinates for the <code>x</code> axis. <code>fy</code> exists as well. <a href="#fnr1-298" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-298">
+<p><code>dotDivs.append('text')</code> <a href="#fnr2-298" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-298">
+<p><code>dotDivs.append('circle')</code> <a href="#fnr3-298" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

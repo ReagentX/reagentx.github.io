@@ -1,0 +1,168 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">June 29, 2016</time>
+<title>Cleaning Team Liquid’s Historical Data</title>
+<h1 class="article_title">Cleaning Team Liquid’s Historical Data</h1>
+
+<div class="TOC">
+<ul>
+<li><a href="#acquiringdata">Acquiring Data</a></li>
+<li><a href="#cleaningdata">Cleaning Data</a>
+
+<ul>
+<li><a href="#generalsheet">General Sheet</a></li>
+<li><a href="#teamssheet">Teams Sheet</a></li>
+<li><a href="#roundssheet">Rounds Sheet</a></li>
+</ul></li>
+<li><a href="#summarizingdata">Summarizing Data</a></li>
+</ul>
+</div>
+
+<hr />
+
+<p>My last <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/">post</a> about the Counter-Strike Global Offensive <a href="https://twitter.com/rxcs/timelines/734113232655286272">Major</a> in Columbus <a href="https://twitter.com/rxcs/status/728093153203359744">exploded</a>, prompting more <a href="https://twitter.com/rxcs/status/747570222832332801">digging</a> into better data. Along the way, there were several roadblocks that can be easily solved with a few simple tools in Excel.</p>
+
+<h2 id="acquiringdata">Acquiring Data</h2>
+
+<p>Team Liquid, founded in 2000, is a leading worldwide professional esports organization. Analyzing their historical match data is a big task, but one that can be streamlined with several pieces of software. As before, <a href="HLTV.org">HLTV.org</a>’s brilliant searchable <a href="http://www.hltv.org/matches/archive/">index</a> of historical CS:GO matches becomes extremely useful. To narrow down the matches to the ones relevant to Liquid, filter on “Liquid” under <em>Team</em> and tick the “Has Demo” filter.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/hltv-query.png" alt="" />
+</figure>
+
+<p>It should return about 93 matches<sup><a href="#fn1" id="fnr1" title="see footnote" class="footnote">1</a></sup>. Once downloaded, copy them to <code>C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo</code> and open <a href="https://github.com/akiver/CSGO-Demos-Manager">CSGO-Demos-Manager</a>. Once analyzed, export the demos to a single file. This is where the fun begins.</p>
+
+<h1 id="cleaningdata">Cleaning Data</h1>
+
+<p>As with nearly every raw data source, this one comes out messy and must be scrubbed before analysis can be done.</p>
+
+<h2 id="generalsheet">General Sheet</h2>
+
+<p>The winner column in the CSGO-Demos-Manager export has historically been <a href="https://github.com/akiver/CSGO-Demos-Manager/issues/74">wrong</a>, so it is best to <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/#generalsheet">replace</a> that column with an <code>=IF</code> that checks the <code>Score team 1</code> and <code>Score team 2</code> columns to find the proper winner. This formula can be used to find the winner at the half as well: simply add a new column and fill with the proper cell references to the <code>Score 1st half team 1</code> and <code>Score 1st half team 2</code> columns.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/winner-if.png" alt="" />
+</figure>
+
+<p>There is a far more pressing issue, however. All of the ESEA matches lack a team name. This is due to the <a href="https://twitter.com/rxcs/status/747571575650553856">nomenclature</a> they use in their demo files. Instead of listing “Team 1” as “Liquid,” ESEA demos lost “Team 1” as “Team 1” and “Team 2” as “Team 2.” This is incredibly frustrating because the <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/#matchwinner">original method</a> of linking the round winner to the <code>Rounds</code> sheet is now broken. To fix this, either omit the ESEA matches from the export and try again<sup><a href="#fn2" id="fnr2" title="see footnote" class="footnote">2</a></sup> or manually find the proper team names. </p>
+
+<p>The easiest way to do this is to select the ESEA matches in CSGO-Demos-Manager and export them all individually. Then, on the <code>Players</code> sheet of the individual match exports, manually match the team name with the player’s respective team and enter it in the proper cell on the <code>General</code> sheet of the group export.</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/indivi-export.png" alt="" />
+</figure>
+
+<p>For example, in the <code>Players</code> sheet of the individual match export above, the team name “Team 2” in the <code>General</code> sheet of the group export is actually “OpTic” and “Team 1” is actually “Liquid.” Here are the corrected cells, highlighted in green:</p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/team-corrected.png" alt="" />
+</figure>
+
+<p>A lack of standardized nomenclature between leagues causes CSGO-Demos-Manager to list individual teams under multiple names, i.e. Liquid as “Liquid” and “Team Liquid.” To correct for this, a simple find-and-replace will suffice. This different team name nomenclature is a problem that affects almost all of the sheets and correcting the <code>General</code> sheet reduces the work later on.</p>
+
+<h2 id="teamssheet">Teams Sheet</h2>
+
+<p>Because teams have entries under different names, the <code>Teams</code> sheet is entirely useless. To see the proper statistics, replace the entire sheet with a PivotTable of the <code>General</code> sheet. Set the <code>Row</code> to focus on <code>Winner</code> and add the relevant columns as values. </p>
+
+<figure>
+<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/teams-pivot.png" alt="" />
+</figure>
+
+<p>This automates the model so that any more changes to the <code>General</code> sheet will be reflected by the <code>Teams</code> sheet.</p>
+
+<h2 id="roundssheet">Rounds Sheet</h2>
+
+<p>Finally, the <code>Rounds</code> sheet needs some attention. The <code>Winner</code> Clan Name column is incorrect due to the ESEA nomenclature<sup><a href="#fn3" id="fnr3" title="see footnote" class="footnote">3</a></sup>. The proper team names can be referenced from the <code>General</code> sheet with the new <code>=IFS</code> formula:</p>
+
+<pre><code>=IFS(E2="Team 2",VLOOKUP(A2,General!B:N,13,FALSE),E2="Team 1",VLOOKUP(A2,General!B:N,12,FALSE),E2<>"",E2)</code></pre>
+
+<p>The first part of the formula checks if the <code>Winner</code> column is “Team 2” and if it uses a <code>VLOOKUP</code> to pull Team 2’s name from the <code>General</code> sheet. If that case is not hit, it checks if the <code>Winner</code> column is “Team 1” and if it uses a <code>VLOOKUP</code> to pull Team 1’s name from the <code>General</code> sheet. If neither of these cases are hit it checks if the cell is empty. If the cell has data, it then copies whatever was in that cell. This way it will only alter the data if the string “Team 1” or “Team 2” is present.</p>
+
+<p>To reference the match winner, add a new column at the end of the <code>Rounds</code> sheet like <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/#matchwinner">before</a>. A simple formula like <code>=VLOOKUP(A2,General!B:V,21,FALSE)</code> will pull the proper match winner.</p>
+
+<h1 id="summarizingdata">Summarizing Data</h1>
+
+<p>These changes allow us to quickly summarize Liquids historical performance. They have won 54% of the matches they play as well as 52% of the rounds. Of those round wins here is a simple breakdown by side using <code>COUNTIFS(F:F,&quot;Liquid&quot;,G:G,&quot;T&quot;)</code> and <code>COUNTIFS(F:F,&quot;Liquid&quot;,G:G,&quot;CT&quot;)</code>:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Data</th>
+	<th style="text-align:left;">Count</th>
+	<th style="text-align:left;">%</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;">Wins as T</td>
+	<td style="text-align:left;">686</td>
+	<td style="text-align:left;">57%</td>
+</tr>
+<tr>
+	<td style="text-align:left;">Wins as CT</td>
+	<td style="text-align:left;">561</td>
+	<td style="text-align:left;">47%</td>
+</tr>
+</tbody>
+</table>
+
+<p>This dataset is now ripe for expansion like the <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/">MLG Columbus</a> analysis. </p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1">
+<p>I found 95 but 2 of the demos were corrupted. <a href="#fnr1" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2">
+<p>This can be easily done by looking at the filename of the demos in column A and removing the respective files from the <code>csgo</code> folder where CSGO-Demos-Manager looks. <a href="#fnr2" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3">
+<p>Assuming you did not omit the ESEA matches in a new export. If you ignored these matches, disregard <a href="https://twitter.com/rxcs/status/747967251974782977">these</a> formulas. <a href="#fnr3" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+<center><p>Discussion on <a href="https://www.reddit.com/r/GlobalOffensive/comments/4qhpfh/use_csgodemosmanager_heres_how_to_clean_the/">r/GlobalOffensive</a> </p>
+
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>
