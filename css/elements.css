@@ -41,7 +41,7 @@ div.button {
     --aug-border: 5px;
     --aug-inset: 5px;
     padding: 10px; /* mind the gap */
-    --aug-border-bg: rgba(204, 4, 121, 0.75);
+    --aug-border-bg: rgba(205, 5, 120, 0.75);
     --aug-inset-bg: #21003e;
     text-align: center;
     color: #dbdbdb;
@@ -74,7 +74,7 @@ div.consoleWindow {
     --aug-border: 5px;
     --aug-inset: 5px;
     padding: 10px; /* mind the gap */
-    --aug-border-bg: rgba(204, 4, 121, 0.75);
+    --aug-border-bg: rgba(205, 5, 120, 0.75);
     --aug-inset-bg: #21003e;
 }
 
