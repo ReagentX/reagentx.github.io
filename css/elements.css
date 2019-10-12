@@ -81,3 +81,9 @@ div.consoleWindow {
 div.consoleWindow0 {
     --aug-border: 8px;
 }
+
+@media (pointer:coarse) {
+    div.button:hover {
+        --aug-border-bg: #82AF00;
+    }   
+}
