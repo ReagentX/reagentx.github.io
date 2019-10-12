@@ -15,7 +15,12 @@ html {
     margin-right: auto;
     padding-left: 10px;
     padding-right: 10px;
+    overflow: -moz-scrollbars-none;
   }
+
+  pre::-webkit-scrollbar {
+    display: none;
+}
   
   *, ::after, ::before {
     box-sizing: inherit;
