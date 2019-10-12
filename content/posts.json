@@ -1,131 +1,131 @@
 [
     {
-        "slug": "posts/python-expontentiation-performance/",
+        "slug": "blog/python-expontentiation-performance/",
         "title": "Performance of Various Python Exponentiation Methods",
         "date": "05/30/19"
     },
     {
-        "slug": "posts/lessons-in-d3-labeling/",
+        "slug": "blog/lessons-in-d3-labeling/",
         "title": "Lessons in D3 Labeling",
         "date": "10/07/18"
     },
     {
-        "slug": "posts/lessons-in-es6-module-loading/",
+        "slug": "blog/lessons-in-es6-module-loading/",
         "title": "Lessons in ES6 Module Loading",
         "date": "08/08/18"
     },
     {
-        "slug": "posts/building-a-high-end-mechanical-keyboard/",
+        "slug": "blog/building-a-high-end-mechanical-keyboard/",
         "title": "Building a High-End Mechanical Keyboard",
         "date": "08/03/18"
     },
     {
-        "slug": "posts/using-excel-tableau-visualize-trends-merit-badge-data/",
+        "slug": "blog/using-excel-tableau-visualize-trends-merit-badge-data/",
         "title": "Using Excel and Tableau to Visualize Trends in Merit Badge Data",
         "date": "02/14/18"
     },
     {
-        "slug": "posts/csgo-player-consistency-2017/",
+        "slug": "blog/csgo-player-consistency-2017/",
         "title": "Exploring CS:GO Player Consistency During 2017",
         "date": "01/11/18"
     },
     {
-        "slug": "posts/problems-with-csgo-rating-systems/",
+        "slug": "blog/problems-with-csgo-rating-systems/",
         "title": "Problems with Counter-Strike Rating Systems",
         "date": "09/20/17"
     },
     {
-        "slug": "posts/ecs-season-season-three-by-the-numbers/",
+        "slug": "blog/ecs-season-season-three-by-the-numbers/",
         "title": "Visualizing ECS Season 3: By The Numbers",
         "date": "05/20/17"
     },
     {
-        "slug": "posts/using-python-download-hltv-demos/",
+        "slug": "blog/using-python-download-hltv-demos/",
         "title": "Using Python to Download HLTV Demos",
         "date": "05/18/17"
     },
     {
-        "slug": "posts/optimizing-case-purchase-prices/",
+        "slug": "blog/optimizing-case-purchase-prices/",
         "title": "Optimizing CS:GO Case Purchase Prices",
         "date": "11/30/16"
     },
     {
-        "slug": "posts/visualizing-itunes-library-data-excel/",
+        "slug": "blog/visualizing-itunes-library-data-excel/",
         "title": "Visualizing iTunes Library Data in Excel",
         "date": "07/31/16"
     },
     {
-        "slug": "posts/cleaning-team-liquids-historical-data/",
+        "slug": "blog/cleaning-team-liquids-historical-data/",
         "title": "Cleaning Team Liquid’s Historical Data",
         "date": "07/29/16"
     },
     {
-        "slug": "posts/file-sizes-in-excel/",
+        "slug": "blog/file-sizes-in-excel/",
         "title": "How To Deal with File Sizes in Excel",
         "date": "05/05/16"
     },
     {
-        "slug": "posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/",
+        "slug": "blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/",
         "title": "MLG Columbus 2016: An Econometric Analysis of Counter-Strike",
         "date": "04/30/16"
     },
     {
-        "slug": "posts/rat-pro-x-review/",
+        "slug": "blog/rat-pro-x-review/",
         "title": "Mad Catz R.A.T. PRO X: Ambitious, Yet Flawed",
         "date": "03/15/16"
     },
     {
-        "slug": "https://chrissardegna.com/blog/posts/keynote-data-vizualization",
+        "slug": "https://chrissardegna.com/blog/blog/keynote-data-vizualization",
         "title": "Using Keynote to Make Beautiful Data Visualizations",
         "date": "02/09/16"
     },
     {
-        "slug": "https://chrissardegna.com/blog/posts/the-egpu-problem",
+        "slug": "https://chrissardegna.com/blog/blog/the-egpu-problem",
         "title": "The eGPU Problem",
         "date": "01/21/16"
     },
     {
-        "slug": "https://chrissardegna.com/blog/posts/the-console-storage-speed-bottleneck",
+        "slug": "https://chrissardegna.com/blog/blog/the-console-storage-speed-bottleneck",
         "title": "The Console Storage Speed Bottleneck",
         "date": "01/05/16"
     },
     {
-        "slug": "https://chrissardegna.com/blog/posts/new-blog",
+        "slug": "https://chrissardegna.com/blog/blog/new-blog",
         "title": "New Blog!",
         "date": "11/07/15"
     },
     {
-        "slug": "https://chrissardegna.com/blog/posts/clash-of-clans-an-economic-analysis",
+        "slug": "https://chrissardegna.com/blog/blog/clash-of-clans-an-economic-analysis",
         "title": "Clash of Clans: An Economic Analysis",
         "date": "11/05/15"
     },
     {
-        "slug": "https://chrissardegna.com/blog/posts/now-live-apple-news",
+        "slug": "https://chrissardegna.com/blog/blog/now-live-apple-news",
         "title": "Now Live in Apple News",
         "date": "10/19/15"
     },
     {
-        "slug": "https://chrissardegna.com/blog/posts/using-your-twitter-archive-to-visualize-your-tweets",
+        "slug": "https://chrissardegna.com/blog/blog/using-your-twitter-archive-to-visualize-your-tweets",
         "title": "Using Your Twitter Archive to Visualize Your Tweets",
         "date": "08/15/15"
     },
     {
-        "slug": "posts/apple-watch-fashion-liberation",
+        "slug": "blog/apple-watch-fashion-liberation",
         "title": "The Apple Watch Fashion Liberation",
         "date": "05/11/15"
     },
     {
-        "slug": "posts/the-downfall-of-the-smart-appliance",
+        "slug": "blog/the-downfall-of-the-smart-appliance",
         "title": "The Downfall of the Smart Appliance",
         "date": "01/06/15"
     },
     {
-        "slug": "posts/get-an-app-approved",
+        "slug": "blog/get-an-app-approved",
         "title": "How To Get An App Approved",
         "date": "06/26/14"
     },
     {
-        "slug": "posts/how-to-get-an-app-approved",
+        "slug": "blog/how-to-get-an-app-approved",
         "title": "So, You Want To Get An App Approved",
         "date": "01/25/14"
     }
