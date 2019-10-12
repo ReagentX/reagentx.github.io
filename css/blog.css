@@ -1,0 +1,349 @@
+/*! concrete.css v1.2.0 | MIT License | github.com/louismerlin/concrete.css/ */
+html {
+    font-size: 62.5%;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-size: 2rem;
+    font-weight: 100;
+    background: white;
+    color: #21003e;
+    font-family: 'SFNSTextLight', Helvetica, Arial, sans-serif;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  *, ::after, ::before {
+    box-sizing: inherit;
+  }
+  
+  a {
+    color: #009b5f;
+  }
+
+  footnote {
+      color: #a2a2a2
+  }
+  
+  blockquote, dl, figure, form, ol, p, pre, table {
+    margin-bottom: 2.2rem;
+  }
+  
+  img {
+    height: auto;
+    max-width: 100%;
+  }
+  
+  /* A Cool Container */
+  
+  .container {
+    margin: 0 auto;
+    max-width: 66rem;
+    padding: 0 1rem;
+    width: 100%;
+    position: relative;
+  }
+  
+  /* The Button */
+  
+  .button {
+    text-decoration: none;
+  }
+  
+  button,
+  .button,
+  input[type="button"],
+  input[type="reset"],
+  input[type="submit"] {
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 0;
+    background: white;
+    line-height: 2.2rem;
+    font-size: 1.6rem;
+    color: #21003e;
+    border: 0.3rem solid #21003e;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+  }
+  
+  button.filled,
+  .button.filled,
+  input[type="button"].filled,
+  input[type="reset"].filled,
+  input[type="submit"].filled {
+    color: white;
+    background: #21003e;
+  }
+  
+  .button,
+  button,
+  dd,
+  dt {
+    margin-bottom: 1.0rem;
+  }
+  
+  /* The List */
+  
+  ul {
+    list-style: circle;
+  }
+  
+  /* The Form */
+  
+  fieldset {
+    border-width: 0;
+    padding: 0;
+  }
+  
+  label, legend {
+    display: block;
+    font-weight: bold;
+    margin-bottom: .5rem;
+  }
+  
+  input[type="email"],
+  input[type="number"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="text"],
+  input[type="url"],
+  textarea,
+  select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: transparent;
+    border: 0.1rem solid #21003e;
+    border-radius: 0;
+    box-shadow: none;
+    box-sizing: inherit;
+    padding: .6rem 1.0rem;
+    width: 100%;
+  }
+  
+  fieldset, input, select, textarea {
+    margin-bottom: 1.5rem;
+  }
+  
+  /* The Table */
+  
+  table {
+    width: 100%;
+    border-spacing: 0;
+  }
+  
+  td, th {
+    padding: 0.6rem 0;
+  }
+  
+  td {
+    border-bottom: 0.1rem solid #21003e;
+  }
+  
+  th {
+    border-bottom: 0.3rem solid #21003e;
+    text-align: left;
+  }
+  
+  /* The Blockquote and the Code */
+  
+  blockquote, pre {
+    border-left: 0.3rem solid lightgray;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 1rem 1.5rem;
+    overflow-y: hidden;
+  }
+  
+  pre {
+    background: lightgray;
+    border-left: 0.3rem solid #21003e;
+  }
+  
+  pre > code {
+    padding: 1rem 1.4rem;
+    font-size: 1.6rem;
+    white-space: pre;
+    display: block;
+    color: darkslategrey;
+  }
+  
+  /* The Progress Bar */
+  
+  progress {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    border-radius: 0;
+    display: block;
+    height: 1rem;
+    border: 0.1rem solid #21003e;
+    background: white;
+    color: #21003e;
+    overflow: hidden;
+    padding: 0;
+    width: 100%;
+  }
+  progress::-webkit-progress-bar {
+    background-color: white;
+  }
+  progress::-webkit-progress-value {
+    background-color: #21003e;
+  }
+  progress::-moz-progress-bar {
+    background-color: #21003e;
+  }
+  progress::-ms-fill {
+    background-color: #21003e;
+  }
+  
+  /* The Break Line */
+  
+  hr {
+    border: 0.2rem solid #21003e;
+    border-bottom-width: 0.1rem;
+  }
+  
+  /* The Grid */
+  
+  .row {
+      display: flex;
+      flex-direction: column;
+    padding: 0;
+  }
+  
+  .row .column {
+    display: block;
+    flex: 1 1 auto;
+    margin-left: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .row.mobile {
+    flex-direction: row;
+  }
+  
+  .row.mobile .column {
+    width: unset;
+    padding: 0;
+  }
+
+  /* Other Stuff */
+  TOC.a {
+    text-decoration: none;
+  }
+
+  .TOC::before{
+    content: "Table of Contents";
+  }
+
+  time.article_time {
+    text-transform: uppercase;
+    display: block;
+    margin-top: 70px;
+    font-family: 'SFNSTextLight', 'Helvetica', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #a2a2a2;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  @media (min-width: 40.0rem) {
+    .row {
+      flex-direction: row;
+      margin: 0 -1rem;
+      width: calc(100% + 2rem);
+    }
+    .row .column {
+      margin-bottom: inherit;
+      padding: 0 1.0rem;
+    }
+  }
+  
+  /* Dark Mode */
+  
+  @media (prefers-color-scheme: dark) {
+    body {
+      background: #21003e;
+      color: white;
+    }
+    a {
+      color: #00ff9f;
+    }
+   .TOC a {
+        text-decoration: none;
+    }
+    button,
+    .button,
+    input[type="button"],
+    input[type="reset"],
+    input[type="submit"] {
+      background: #21003e;
+      color: white;
+      border-color: white;
+    }
+    button.filled,
+    .button.filled,
+    input[type="button"].filled,
+    input[type="reset"].filled,
+    input[type="submit"].filled {
+      color: #21003e;
+      background: white;
+    }
+    input[type="email"],
+    input[type="number"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="text"],
+    input[type="url"],
+    textarea,
+    select {
+      color: white;
+      border-color: white;
+    }
+    td {
+      border-bottom-color: white;
+    }
+    th {
+      border-bottom-color: white;
+    }
+    blockquote, pre {
+      border-left-color: white;
+    }
+    pre {
+      border-color: white;
+      border-left-color: white;
+      color: lightgray;
+      background: #30005a;
+    }
+    pre > code {
+        color: lightgray;
+      }    
+    progress {
+      border-color: white;
+      background: #21003e;
+      color: white;
+    }
+    progress::-webkit-progress-bar {
+      background-color: #21003e;
+    }
+    progress::-webkit-progress-value {
+      background-color: white;
+    }
+    progress::-moz-progress-bar {
+      background-color: white;
+    }
+    progress::-ms-fill {
+      background-color: white;
+    }
+    hr {
+      border-color: white;
+    }
+  }
