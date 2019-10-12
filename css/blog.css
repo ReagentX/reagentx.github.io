@@ -1,4 +1,6 @@
 /*! concrete.css v1.2.0 | MIT License | github.com/louismerlin/concrete.css/ */
+/* Modified Heavily by github.com/reagentx */
+
 html {
     font-size: 62.5%;
     box-sizing: border-box;
@@ -251,6 +253,10 @@ html {
     text-decoration: none;
   }
 
+  header {
+    padding-top: 5rem;
+  }
+
   .TOC::before{
     content: "Table of Contents";
   }
@@ -258,12 +264,16 @@ html {
   time.article_time {
     text-transform: uppercase;
     display: block;
-    margin-top: 70px;
+    margin-top: 3.2rem;
     font-family: 'SFNSTextLight', 'Helvetica', sans-serif;
     font-weight: 700;
     font-size: 14px;
     color: #a2a2a2;
     -webkit-font-smoothing: antialiased;
+  }
+
+  h1 {
+    margin-top: 0;
   }
   
   @media (min-width: 40.0rem) {
