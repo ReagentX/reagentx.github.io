@@ -110,7 +110,7 @@ const activate = (id) =>
     {
         $.getJSON(content[id], function(posts) 
         {
-            html = '<div><h1>Blogroll</h1>'
+            html = '<div><h1><span id="a">Blogroll</span></h1>'
             posts.forEach(post => {
                 html += `<p>${post.date} <a href="${post.slug}">${post.title}</a></p>`
             });
