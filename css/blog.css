@@ -179,6 +179,10 @@ html {
     background: lightgray;
     border-left: 0.3rem solid #21003e;
   }
+
+  code {
+    background: lightgray;
+  }
   
   pre > code {
     padding: 1rem 1.4rem;
@@ -349,6 +353,11 @@ html {
       color: lightgray;
       background: #30005a;
     }
+
+    code {
+      background: #30005a;
+    }
+
     pre > code {
         color: lightgray;
       }    
