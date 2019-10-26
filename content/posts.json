@@ -1,5 +1,10 @@
 [
     {
+        "slug": "blog/python-floor-division/",
+        "title": "Floor Division in Python",
+        "date": "10/22/19"
+    },
+    {
         "slug": "blog/python-expontentiation-performance/",
         "title": "Performance of Various Python Exponentiation Methods",
         "date": "05/30/19"

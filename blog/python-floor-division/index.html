@@ -1,0 +1,402 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">October 22, 2019</time>
+<title>Floor Division in Python</title>
+<h1 class="article_title">Floor Division in Python</h1>
+
+<div class="TOC">
+<ul>
+<li><a href="#the-problem">The Problem</a>
+
+<ul>
+<li><a href="#avoiding-this-error">Avoiding this Error</a></li>
+</ul></li>
+<li><a href="#definition-of-floor-division">Definition of Floor Division</a></li>
+<li><a href="#python-arithmetic">Python Arithmetic</a></li>
+<li><a href="#floatfloordiv">float_floor_div</a></li>
+<li><a href="#floatdivmod">float_divmod</a>
+
+<ul>
+<li><a href="#division-by-zero">Division by Zero</a></li>
+<li><a href="#quotient-and-dividend">Quotient and Dividend</a></li>
+<li><a href="#remainder-sign">Remainder Sign</a></li>
+<li><a href="#remainder-is-zero">Remainder is Zero</a></li>
+<li><a href="#calling-floor">Calling Floor</a></li>
+<li><a href="#numerator-is-zero">Numerator is Zero</a></li>
+<li><a href="#returning-the-tuple">Returning the Tuple</a></li>
+</ul></li>
+<li><a href="#design-decisions">Design Decisions</a>
+
+<ul>
+<li><a href="#pep-328">PEP 328</a></li>
+<li><a href="#pep-3141">PEP 3141</a></li>
+<li><a href="#further-debate">Further Debate</a></li>
+</ul></li>
+<li><a href="#conclusions">Conclusions</a>
+
+<ul>
+<li><a href="#breaking-changes">Breaking Changes</a></li>
+<li><a href="#simplicity">Simplicity</a></li>
+<li><a href="#speed">Speed</a></li>
+<li><a href="#polymorphism">Polymorphism</a></li>
+</ul></li>
+</ul>
+</div>
+
+<h2 id="the-problem">The Problem</h2>
+
+<p>In solving data analytics problems, occasionally we must bin data into intervals or categories based on some arbitrary stratification. A common example outside of the world of computer science is letter grades, a concept that can be abstracted<sup><a href="#fn1-10891" id="fnr1-10891" title="see footnote" class="footnote">1</a></sup> to:</p>
+
+<pre><code>def grade(score):
+    grades = ['F', 'D', 'C', 'B', 'A']
+    if score &gt;= 100:
+        return 'A'
+    if score &lt;= 50:
+        return 'F'
+    return grades[(score - 50) // 10]
+</code></pre>
+
+<p>Thus, for:</p>
+
+<pre><code>scores = [88, 72, 61, 39, 97]
+results = [grade(score) for score in scores]
+</code></pre>
+
+<p>We get:</p>
+
+<pre><code>['B', 'C', 'D', 'F', 'A']
+</code></pre>
+
+<p>However, if any of our <code>score</code> values<sup><a href="#fn2-10891" id="fnr2-10891" title="see footnote" class="footnote">2</a></sup> are not integers we will encounter a <code>TypeError</code>:</p>
+
+<pre><code>&gt;&gt;&gt; grade(61.2)
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;lambda&gt;
+TypeError: list indices must be integers or slices, not float
+</code></pre>
+
+<p>This is caused by the following type coercion, as lists cannot be indexed by floats:</p>
+
+<pre><code>&gt;&gt;&gt; (61.2 - 50) // 2
+1.0
+</code></pre>
+
+<h3 id="avoiding-this-error">Avoiding this Error</h3>
+
+<p>Of course, we can cast to an int:</p>
+
+<pre><code>def grade(score):
+    grades = ['F', 'D', 'C', 'B', 'A']
+    if score &gt; 99:
+        return 'A'
+    if score &lt;= 50:
+        return 'F'
+    return grades[(int(score) - 50) // 10]
+</code></pre>
+
+<p>However, for large datasets this is not an efficient operation:</p>
+
+<pre><code>chris% python -m timeit 'int(102.3 // 2)'
+5000000 loops, best of 5: 99.6 nsec per loop
+chris% python -m timeit '102.3 // 2'     
+50000000 loops, best of 5: 7.05 nsec per loop
+</code></pre>
+
+<p>In my real-world example, the <code>score</code> equivalent is always a float, so we can map the float integer values to their respective categories<sup><a href="#fn3-10891" id="fnr3-10891" title="see footnote" class="footnote">3</a></sup>, similar to:</p>
+
+<pre><code>&gt;&gt;&gt; grades
+{0.0: 'F', 1.0: 'D', ...}
+&gt;&gt;&gt; grades[0]
+'F'
+&gt;&gt;&gt; grades[0.]
+'F'
+&gt;&gt;&gt; grades[1]
+'D'
+&gt;&gt;&gt; grades[1.]
+'D'
+</code></pre>
+
+<p>However, I was still curious why floor division was returning a float and not an integer.</p>
+
+<h2 id="definition-of-floor-division">Definition of Floor Division</h2>
+
+<p>According to <em>Concrete Mathematics</em><sup><a href="#fn4-10891" id="fnr4-10891" title="see footnote" class="footnote">4</a></sup>:</p>
+
+<blockquote>
+<p>⌊x⌋ = the greatest integer less than or equal to x</p>
+
+<p>⌈x⌉ = the least integer greater than or equal to x</p>
+</blockquote>
+
+<p>Note the key word <em>integer;</em> while this may be the official mathematical definition, Python does not seem to follow this to the letter and returns a type-coerced value.</p>
+
+<h2 id="python-arithmetic">Python Arithmetic</h2>
+
+<p>It is documented when types are <a href="https://docs.python.org/3/reference/expressions.html#arithmetic-conversions">coerced</a>. From the Python docs:</p>
+
+<ul>
+<li>If either argument is a complex number, the other is converted to complex;</li>
+<li>otherwise, if either argument is a floating point number, the other is converted to floating point;</li>
+<li>otherwise, both must be integers and no conversion is necessary.</li>
+</ul>
+
+<p>The same is true for <a href="https://docs.python.org/3/reference/expressions.html#binary-arithmetic-operations">binary operators</a>:</p>
+
+<blockquote>
+<p>The / (division) and // (floor division) operators yield the quotient of their arguments. The numeric arguments are first converted to a common type. Division of integers yields a float, while floor division of integers results in an integer; the result is that of mathematical division with the ‘floor’ function applied to the result.</p>
+</blockquote>
+
+<h2 id="floatfloordiv">float_floor_div</h2>
+
+<p>The float <code>divmod</code> work occurs in <code>float_floor_div</code>, which comes from the <a href="https://github.com/python/cpython/blob/279f44678c8b84a183f9eeb85e0b086228154497/Objects/floatobject.c#L673">cpython source</a>. All this function does is call <code>float_divmod</code> and dereferences the quotient:</p>
+
+<pre><code>static PyObject *
+float_floor_div(PyObject *v, PyObject *w)
+{
+    PyObject *t, *r;
+
+    t = float_divmod(v, w);
+    if (t == NULL || t == Py_NotImplemented)
+        return t;
+    assert(PyTuple_CheckExact(t));
+    r = PyTuple_GET_ITEM(t, 0);
+    Py_INCREF(r);
+    Py_DECREF(t);
+    return r;
+}
+</code></pre>
+
+<p>The bulk of the work occurs inside of the called function, <code>float_divmod</code>.</p>
+
+<h2 id="floatdivmod">float_divmod</h2>
+
+<p>The source for <code>float_divmod</code> lives <a href="https://github.com/python/cpython/blob/279f44678c8b84a183f9eeb85e0b086228154497/Objects/floatobject.c#L626">here</a>. The first step of this function handles the type cast:</p>
+
+<pre><code>float_divmod(PyObject *v, PyObject *w)
+{
+    double vx, wx;
+    double div, mod, floordiv;
+    CONVERT_TO_DOUBLE(v, vx);
+    CONVERT_TO_DOUBLE(w, wx);
+    ...
+</code></pre>
+
+<p>Where <code>vx</code> is the dividend, and <code>wx</code> is the divisor. The rest of this function handles the various cases that can occur:</p>
+
+<h3 id="division-by-zero">Division by Zero</h3>
+
+<p>If the divisor is zero, we raise an error:</p>
+
+<pre><code>...
+if (wx == 0.0) {
+    PyErr_SetString(PyExc_ZeroDivisionError, &quot;float divmod()&quot;);
+    return NULL;
+}
+...
+</code></pre>
+
+<h3 id="quotient-and-dividend">Quotient and Dividend</h3>
+
+<p>Before we can do any work, we must calculate the quotient and dividend:</p>
+
+<pre><code>mod = fmod(vx, wx);
+div = (vx - mod) / wx;
+</code></pre>
+
+<p>We get the modulus using the <code>fmod</code> function from the <a href="https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fmod-fmodf?view=vs-2019">C Standard Library</a>, and the quotient using <a href="https://github.com/python/cpython/blob/master/Objects/floatobject.c#L580">float division</a>, also leveraging the C standard library.</p>
+
+<h3 id="remainder-sign">Remainder Sign</h3>
+
+<p>Once we have these values, we check to ensure the sign is correct.</p>
+
+<pre><code>...
+if (mod) {
+    if ((wx &lt; 0) != (mod &lt; 0)) {
+        mod += wx;
+        div -= 1.0;
+    }
+}
+...
+</code></pre>
+
+<h3 id="remainder-is-zero">Remainder is Zero</h3>
+
+<p>If the remainder (i.e., the modulus) is zero, we copy the sign to the divisor with <code>copysign(0.0, wx)</code><sup><a href="#fn5-10891" id="fnr5-10891" title="see footnote" class="footnote">5</a></sup>.</p>
+
+<h3 id="calling-floor">Calling Floor</h3>
+
+<p>If the quotient is not zero, we call the <code>floor</code> function:</p>
+
+<pre><code>...
+if (div) {
+    floordiv = floor(div);
+    if (div - floordiv &gt; 0.5)
+        floordiv += 1.0;
+}
+...
+</code></pre>
+
+<h3 id="numerator-is-zero">Numerator is Zero</h3>
+
+<p>If the dividend is zero, we copy the sign of the quotient onto zero with <code>copysign(0.0, vx / wx)</code>.</p>
+
+<h3 id="returning-the-tuple">Returning the Tuple</h3>
+
+<p>Once all of this has completed, we return a tuple like <code>(floor_qotient, modulus)</code>.</p>
+
+<h2 id="design-decisions">Design Decisions</h2>
+
+<p>As Python is a mature language, the changes that affected these behaviors underwent much debate.</p>
+
+<h3 id="pep-328">PEP 328</h3>
+
+<p>Since the proposal of the Python 3 change to the division operator in <a href="https://www.python.org/dev/peps/pep-0238/">PEP 238</a>, it was decided that the result of floor division with floats would be a float, following the above arithmetic conversions:</p>
+
+<blockquote>
+<p>In particular, if a and b are both ints or longs, the result has the same type and value as for classic division on these types (including the case of mixed input types; <code>int // long</code> and <code>long // int</code> will both return a long).</p>
+
+<p>For floating point inputs, the result is a float. For example: <code>3.5 // 2.0 == 1.0</code></p>
+</blockquote>
+
+<h3 id="pep-3141">PEP 3141</h3>
+
+<p>This <a href="https://www.python.org/dev/peps/pep-3141/">PEP</a> defined the changes to the numerical stack in Python and explicitly noted the following:</p>
+
+<blockquote>
+<p><code>__floor__(self)</code>, called from <code>math.floor(x)</code>, which returns the greatest <code>Integral &lt;= x</code>.</p>
+</blockquote>
+
+<p>Thus, it would follow that the <code>floor</code> call in <code>float_divmod</code> should return an integer and not a float value. However, this is not the case.</p>
+
+<h3 id="further-debate">Further Debate</h3>
+
+<p>Thirteen years later, Alexander Belopolsky reported <a href="https://bugs.python.org/issue22444">Issue 22444</a>: <em>Floor divide should return int</em>:</p>
+
+<blockquote>
+<p>PEP 3141 defines floor division as <code>floor(x/y)</code> and specifies that <code>floor()</code> should return int type. Builtin float type has been made part of the PEP 3141 numerical tower, but floor division of two floats still results in a float.</p>
+</blockquote>
+
+<p>In this thread, my exact issue accessing a list index above was <a href="https://bugs.python.org/issue22444#msg227156">raised</a>:</p>
+
+<blockquote>
+<p>This is one of the common uses of floor division - to find an index of a cell in a regular grid: <code>(x - start) // step</code>. In this situation, it is convenient to have the result ready to be used as an index without a cast.</p>
+</blockquote>
+
+<p>However, the decision to not make this change ended with Raymond Hettinger's <a href="https://bugs.python.org/issue22444#msg227172">reply</a>:</p>
+
+<ol>
+<li><p>The current behavior has been around for a long time and is implemented in several modules, including <code>decimal</code> and <code>fraction</code>. As core devs, we need to keep focused on a priority of making the language stable (not making changes that truly necessary and invalidating all previously published material) and more importantly not adding yet more obstacles to converting from Python 2 to Python 3 (which Guido has called &quot;death by a thousand cuts&quot;).</p></li>
+<li><p>The current behavior can be useful it that it allows floor division operations without unexpected type conversions occurring in the middle of an expression. We really don't want to break those use cases.</p></li>
+</ol>
+
+<h2 id="conclusions">Conclusions</h2>
+
+<p>Python's philosophy means the language provides high-level access to data structures. Here, the coercion avoids dealing with the nuances of numeric types that one would have to wrangle with when writing C. In C, given the different numerical types, you <em>have</em> to return a double, because the range of a double is so much larger than that of an integer.</p>
+
+<h3 id="breaking-changes">Breaking Changes</h3>
+
+<p>These decisions were made during the early days of the Python 3 transition, where the core developers wanted to minimize the friction of the upgrade from 2 to 3. As a result, to not break code that depended on floor division being type preserving<sup><a href="#fn6-10891" id="fnr6-10891" title="see footnote" class="footnote">6</a></sup>, it was decided that floor division should return a value <em>equal</em> to an integer<sup><a href="#fn7-10891" id="fnr7-10891" title="see footnote" class="footnote">7</a></sup> but agnostic of type.</p>
+
+<p>In a post-Python 2 era, these concerns do not hold the same weight. This is an example of some technical debt that Python has accrued, as other parts of Python do not behave this way:</p>
+
+<pre><code>&gt;&gt;&gt; type(timedelta(2.2) // timedelta(3))
+&lt;class 'int'&gt;
+&gt;&gt;&gt; type(Fraction(2.3) // Fraction(1))
+&lt;class 'int'&gt;
+</code></pre>
+
+<h3 id="simplicity">Simplicity</h3>
+
+<p>Python makes sacrifices to retain its beauty and simplicity, this being one of them. As a result, the programmer, in this instance, is unable to choose the functionality that best addresses a specific problem. A possible solution would be to provide both <code>floor()</code> and <code>float_floor()</code> for accessing these values in both types. Also possible would be to make lists accessible by the float counterparts of their integer indices, since <code>1 == 1.0</code>.</p>
+
+<h3 id="speed">Speed</h3>
+
+<p>Further, the language is far more performant as a result of this decision: <code>float // any == float</code> is a computationally simple and fast operation; <code>float // any == int</code> is significantly more complicated and expensive, especially for large inputs due to the inefficient cast from float back to int.</p>
+
+<pre><code>chris% python -m timeit 'int(102.3 // 2)'
+5000000 loops, best of 5: 99.6 nsec per loop
+chris% python -m timeit '102.3 // 2'     
+50000000 loops, best of 5: 7.05 nsec per loop
+</code></pre>
+
+<p>This performance hit does not stem from the float conversion itself <sup><a href="#fn8-10891" id="fnr8-10891" title="see footnote" class="footnote">8</a></sup> but rather from the fact that integer and float values are stored in <a href="https://en.wikipedia.org/wiki/Processor_register#Types_of_registers">different registers</a>: the CPU must first store the float from the FPU register in memory, then read that memory address into the int register. This is a classic example of a <a href="https://en.wikipedia.org/wiki/Load-Hit-Store">load-hit-store</a> stall.</p>
+
+<h3 id="polymorphism">Polymorphism</h3>
+
+<p>Since we can combine types in this way in Python, we need to be cognizant of the pitfalls that we can run into when writing polymorphic functions. Most of the time, the type of number will not matter to the Python interpreter. When type does matter, understanding how these data are handled internally leads to a smoother development process.</p>
+
+<hr />
+
+<p>Discussion: <a href="">Hacker News</a>, <a href="">Reddit</a></p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-10891">
+<p>This is an oversimplification of the problem I was solving but serves to demonstrate the issue at hand. <a href="#fnr1-10891" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-10891">
+<p>ex <code>61 -&gt; 61.2</code> <a href="#fnr2-10891" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-10891">
+<p>Additionally, this means we can lookup based on integer or float keys, because in Python, <code>1.0 == 1</code>, thus <code>hash(1.0) == hash(1)</code>. <a href="#fnr3-10891" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn4-10891">
+<p>Graham, Ronald Lewis, et al. Concrete Mathematics: a Foundation for Computer Science. 2nd ed., Addison-Wesley, 2017. P 67. <a href="https://www.csie.ntu.edu.tw/~r97002/temp/Concrete%20Mathematics%202e.pdf">PDF</a>. <a href="#fnr4-10891" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn5-10891">
+<p><a href="https://docs.python.org/3/library/math.html#math.copysign"><code>copysign</code></a> comes from the <code>math</code> module. <a href="#fnr5-10891" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn6-10891">
+<p>Like it was in Python 2. <a href="#fnr6-10891" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn7-10891">
+<p>As mentioned above, <code>1.0 == 1</code>. <a href="#fnr7-10891" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn8-10891">
+<p>The conversion operation just truncates at the decimal. <a href="#fnr8-10891" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>
