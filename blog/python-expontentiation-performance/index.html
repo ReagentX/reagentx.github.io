@@ -3,8 +3,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" type="text/css" href="/css/highlight.css">
 <link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
 <script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
 <script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
 <script type="text/javascript">
     $.bigfoot();
@@ -102,7 +105,7 @@
 
 <p>Using <code>dis.dis(lambda x: x * x)</code>, we can see that the following code gets executed:</p>
 
-<pre><code>0 LOAD_FAST                0 (x)
+<pre><code class="python">0 LOAD_FAST                0 (x)
 2 LOAD_FAST                0 (x)
 4 BINARY_MULTIPLY
 6 RETURN_VALUE
@@ -114,7 +117,7 @@
 
 <p>Using <code>dis.dis(lambda x: math.pow(x, 2))</code>, we can see the following code gets executed:</p>
 
-<pre><code>0 LOAD_GLOBAL              0 (math)
+<pre><code class="python">0 LOAD_GLOBAL              0 (math)
 2 LOAD_ATTR                1 (pow)
 4 LOAD_FAST                0 (x)
 6 LOAD_CONST               1 (2)
@@ -144,7 +147,7 @@
 
 <p>This function is located <a href="https://github.com/Python/cPython/blob/b509d52083e156f97d6bd36f2f894a052e960f03/Objects/longobject.c#L3645-L3665">here</a> in the Python source code. It does a few interesting things:</p>
 
-<pre><code>long_mul(PyLongObject *a, PyLongObject *b)
+<pre><code class="c">long_mul(PyLongObject *a, PyLongObject *b)
 {
     PyLongObject *z;
 
@@ -171,7 +174,7 @@
 
 <p>We can see how this function gets called in <a href="https://github.com/Python/cPython/blob/3880f263d2994fb1eba25835dddccb0cf696fdf0/Python/ceval.c#L1370"><code>ceval.c</code></a>:</p>
 
-<pre><code>case TARGET(BINARY_MULTIPLY): {
+<pre><code class="c">case TARGET(BINARY_MULTIPLY): {
     PyObject *right = POP();
     PyObject *left = TOP();
     PyObject *res = PyNumber_Multiply(left, right);
@@ -190,7 +193,7 @@
 
 <p>The source code is too long to fully include, which partially explains the detrimental performance. Here are some interesting snippets:</p>
 
-<pre><code>if (Py_SIZE(b) &lt; 0) {  /* if exponent is negative */
+<pre><code class="c">if (Py_SIZE(b) &lt; 0) {  /* if exponent is negative */
     if (c) {
         PyErr_SetString(PyExc_ValueError, &quot;pow() 2nd argument &quot;
                         &quot;cannot be negative when 3rd argument specified&quot;);
@@ -211,7 +214,7 @@
 
 <p>If neither cases hit, it checks for a third argument, which is always <code>None</code> according to <a href="https://github.com/Python/cPython/blob/3880f263d2994fb1eba25835dddccb0cf696fdf0/Python/ceval.c#L1358"><code>ceval.c</code></a><sup><a href="#fn1-13434" id="fnr1-13434" title="see footnote" class="footnote">1</a></sup>:</p>
 
-<pre><code>case TARGET(BINARY_POWER): {
+<pre><code class="c">case TARGET(BINARY_POWER): {
     PyObject *exp = POP();
     PyObject *base = TOP();
     PyObject *res = PyNumber_Power(base, exp, Py_None);
@@ -226,7 +229,7 @@
 
 <p>Finally, the function defines two routines: <code>REDUCE</code> for <a href="https://en.wikipedia.org/wiki/Barrett_reduction">modular reduction</a> and <code>MULT</code> for multiplication and reduction. The multiplication function uses <code>long_mul</code> for both values, which is the same function used in <code>BINARY_MULTIPLY</code>.</p>
 
-<pre><code>#define REDUCE(X)
+<pre><code class="c">#define REDUCE(X)
 do {
     if (c != NULL) {
         if (l_divmod(X, c, NULL, &amp;temp) &lt; 0
@@ -274,7 +277,7 @@ do {
 
 <p>Since this changes each time the <code>power</code> changes<sup><a href="#fn3-13434" id="fnr3-13434" title="see footnote" class="footnote">3</a></sup>, we need to generate a new multiplication function each time the base changes. To do this, we can generate a string like <code>x*x*x</code> and call <code>eval()</code> on it to return a function:</p>
 
-<pre><code>def generate_mult_func(n):
+<pre><code class="python">def generate_mult_func(n):
     mult_steps = '*'.join(['q'] * n)
     func_string = f'lambda q: {mult_steps}'  # Keep this so we can print later
     return eval(func_string), func_string
@@ -302,7 +305,7 @@ power = 2
 
 <p>We loop until the time it takes to execute <code>100,000</code> iterations of <code>multiply</code> is slower than executing <code>100,000</code> iterations of <code>exponent</code>. Initially, here are the timings, with <code>math.pow()</code> serving as a point of comparison:</p>
 
-<pre><code>Starting speeds:
+<pre><code class="python">Starting speeds:
 Multiply time   11.56 ms
 Exponent time   35.82 ms
 math.pow time   16.73 ms
@@ -310,7 +313,7 @@ math.pow time   16.73 ms
 
 <p>When running on <a href="https://repl.it/@reagentx/Find-Crossover">repl.it</a>, Python finds the crossover in 1.2s:</p>
 
-<pre><code>Crossover found in 1.2 s:
+<pre><code class="python">Crossover found in 1.2 s:
 Base, power     2, 15
 Multiply time   43.05 ms
 Exponent time   39.70 ms
@@ -324,7 +327,7 @@ Multiply func   lambda q: q*q*q*q*q*q*q*q*q*q*q*q*q*q*q
 
 <p>Using Pandas, we can keep track of the timing at each power:</p>
 
-<pre><code>Power  multiply  exponent  math.pow
+<pre><code class="python">Power  multiply  exponent  math.pow
     2  0.011562  0.035822  0.016731
     3  0.013043  0.033764  0.014614
     4  0.015307  0.032323  0.015349
@@ -343,7 +346,7 @@ Multiply func   lambda q: q*q*q*q*q*q*q*q*q*q*q*q*q*q*q
 
 <p>From here, it is very simple to generate a line graph:</p>
 
-<pre><code>plot = df.plot().get_figure()
+<pre><code class="python">plot = df.plot().get_figure()
 plot.savefig('viz.png')
 </code></pre>
 

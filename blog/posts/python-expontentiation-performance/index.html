@@ -1,0 +1,411 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">May 30, 2019</time>
+<title>Performance of Various Python Exponentiation Methods</title>
+<h1 class="article_title">Performance of Various Python Exponentiation Methods</h1>
+<div class="TOC">
+<ul>
+<li><a href="#timing-tests">Timing Tests</a></li>
+<li><a href="#expression-disassembly">Expression Disassembly</a>
+
+<ul>
+<li><a href="#multiplication">Multiplication</a></li>
+<li><a href="#mathpow">math.pow()</a></li>
+<li><a href="#exponentiation">Exponentiation</a></li>
+</ul></li>
+<li><a href="#binarymultiply-versus-binarypower">BINARY_MULTIPLY versus BINARY_POWER</a>
+
+<ul>
+<li><a href="#binarymultiply">BINARY_MULTIPLY</a></li>
+<li><a href="#binarypower">BINARY_POWER</a></li>
+</ul></li>
+<li><a href="#charting-performance-differences">Charting Performance Differences</a>
+
+<ul>
+<li><a href="#generating-functions">Generating Functions</a>
+
+<ul>
+<li><a href="#mathpow-and-exponentiation">math.pow() and Exponentiation</a></li>
+<li><a href="#chained-multiplication">Chained Multiplication</a></li>
+</ul></li>
+<li><a href="#finding-the-crossover">Finding the Crossover</a></li>
+<li><a href="#charting-the-performance">Charting the Performance</a></li>
+</ul></li>
+<li><a href="#more-performance-testing">More Performance Testing</a></li>
+<li><a href="#conclusions">Conclusions</a></li>
+</ul>
+</div>
+
+<p>Recently, I was writing an <a href="https://repl.it/@reagentx/Midpoint">algorithm</a> to solve a coding challenge that involved finding a point in a Cartesian plane that had the minimum distance from all of the other points. In Python, the distance function would be expressed as <code>math.sqrt(dx ** 2 + dy ** 2)</code>. However, there are several different ways to express each term: <code>dx ** 2</code>, <code>math.pow(dx, 2)</code>, and <code>dx * dx</code>. Interestingly, these all perform differently, and I wanted to understand how and why.</p>
+
+<h2 id="timing-tests">Timing Tests</h2>
+
+<p>Python provides a module called <code>timeit</code> to test performance, which makes testing these timings rather simple. With <code>x</code> set to <code>2</code>, we can run <a href="https://repl.it/@reagentx/Performance-Test">timing tests</a> on all three of our options above:</p>
+
+<table>
+<colgroup>
+<col style="text-align:left;"/>
+<col style="text-align:left;"/>
+</colgroup>
+
+<thead>
+<tr>
+	<th style="text-align:left;">Expression</th>
+	<th style="text-align:left;">Timing (100k iterations)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+	<td style="text-align:left;"><code>x * x</code></td>
+	<td style="text-align:left;">3.87 ms</td>
+</tr>
+<tr>
+	<td style="text-align:left;"><code>x ** 2</code></td>
+	<td style="text-align:left;">80.97 ms</td>
+</tr>
+<tr>
+	<td style="text-align:left;"><code>math.pow(x, 2)</code></td>
+	<td style="text-align:left;">83.60 ms</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="expression-disassembly">Expression Disassembly</h2>
+
+<p>Python also provides a model called <code>dis</code> that disassembles code so we can see what <a href="https://repl.it/@reagentx/Disassembler-Test">each of these expressions</a> are doing under the hood, which helps in understanding the performance differences.</p>
+
+<h3 id="multiplication">Multiplication</h3>
+
+<p>Using <code>dis.dis(lambda x: x * x)</code>, we can see that the following code gets executed:</p>
+
+<pre><code>0 LOAD_FAST                0 (x)
+2 LOAD_FAST                0 (x)
+4 BINARY_MULTIPLY
+6 RETURN_VALUE
+</code></pre>
+
+<p>The program loads <code>x</code> twice, runs <code>BINARY_MULTIPLY</code>, and <code>return</code>s the value.</p>
+
+<h3 id="mathpow">math.pow()</h3>
+
+<p>Using <code>dis.dis(lambda x: math.pow(x, 2))</code>, we can see the following code gets executed:</p>
+
+<pre><code>0 LOAD_GLOBAL              0 (math)
+2 LOAD_ATTR                1 (pow)
+4 LOAD_FAST                0 (x)
+6 LOAD_CONST               1 (2)
+8 CALL_FUNCTION            2
+10 RETURN_VALUE
+</code></pre>
+
+<p>The <code>math</code> module loads from the global space, and then the <code>pow</code> attribute loads. Next, both arguments are loaded and the <code>pow</code> function is called, which <code>return</code>s the value.</p>
+
+<h3 id="exponentiation">Exponentiation</h3>
+
+<p>Using <code>dis.dis(lambda x: x ** 2)</code>, we can see that the following code gets executed:</p>
+
+<pre><code>0 LOAD_FAST                0 (x)
+2 LOAD_CONST               1 (2)
+4 BINARY_POWER
+6 RETURN_VALUE
+</code></pre>
+
+<p>The program loads <code>x</code>, loads <code>2</code>, runs <code>BINARY_POWER</code>, and <code>return</code>s the value.</p>
+
+<h2 id="binarymultiply-versus-binarypower">BINARY_MULTIPLY versus BINARY_POWER</h2>
+
+<p>Using the <code>math.pow()</code> functions as a point of comparison, both multiplication and exponentiation differ in only one part of their bytecode: calling <code>BINARY_MULTIPLY</code> versus calling <code>BINARY_POWER</code>.</p>
+
+<h3 id="binarymultiply">BINARY_MULTIPLY</h3>
+
+<p>This function is located <a href="https://github.com/Python/cPython/blob/b509d52083e156f97d6bd36f2f894a052e960f03/Objects/longobject.c#L3645-L3665">here</a> in the Python source code. It does a few interesting things:</p>
+
+<pre><code>long_mul(PyLongObject *a, PyLongObject *b)
+{
+    PyLongObject *z;
+
+    CHECK_BINOP(a, b);
+
+    /* fast path for single-digit multiplication */
+    if (Py_ABS(Py_SIZE(a)) &lt;= 1 &amp;&amp; Py_ABS(Py_SIZE(b)) &lt;= 1) {
+        stwodigits v = (stwodigits)(MEDIUM_VALUE(a)) * MEDIUM_VALUE(b);
+        return PyLong_FromLongLong((long long)v);
+    }
+
+    z = k_mul(a, b);
+    /* Negate if exactly one of the inputs is negative. */
+    if (((Py_SIZE(a) ^ Py_SIZE(b)) &lt; 0) &amp;&amp; z) {
+        _PyLong_Negate(&amp;z);
+        if (z == NULL)
+            return NULL;
+    }
+    return (PyObject *)z;
+}
+</code></pre>
+
+<p>For small numbers, this uses binary multiplication. For larger values, the function uses <a href="https://en.wikipedia.org/wiki/Karatsuba_algorithm">Karatsuba multiplication</a>, which is a fast multiplication algorithm for larger numbers.</p>
+
+<p>We can see how this function gets called in <a href="https://github.com/Python/cPython/blob/3880f263d2994fb1eba25835dddccb0cf696fdf0/Python/ceval.c#L1370"><code>ceval.c</code></a>:</p>
+
+<pre><code>case TARGET(BINARY_MULTIPLY): {
+    PyObject *right = POP();
+    PyObject *left = TOP();
+    PyObject *res = PyNumber_Multiply(left, right);
+    Py_DECREF(left);
+    Py_DECREF(right);
+    SET_TOP(res);
+    if (res == NULL)
+        goto error;
+    DISPATCH();
+}
+</code></pre>
+
+<h3 id="binarypower">BINARY_POWER</h3>
+
+<p>This function is located <a href="https://github.com/Python/cPython/blob/b509d52083e156f97d6bd36f2f894a052e960f03/Objects/longobject.c#L4118-L4305">here</a> in the Python source code. It also does several interesting things:</p>
+
+<p>The source code is too long to fully include, which partially explains the detrimental performance. Here are some interesting snippets:</p>
+
+<pre><code>if (Py_SIZE(b) &lt; 0) {  /* if exponent is negative */
+    if (c) {
+        PyErr_SetString(PyExc_ValueError, &quot;pow() 2nd argument &quot;
+                        &quot;cannot be negative when 3rd argument specified&quot;);
+        goto Error;
+    }
+    else {
+        /* else return a float.  This works because we know
+           that this calls float_pow() which converts its
+           arguments to double. */
+        Py_DECREF(a);
+        Py_DECREF(b);
+        return PyFloat_Type.tp_as_number-&gt;nb_power(v, w, x);
+    }
+}
+</code></pre>
+
+<p>After creating some pointers, the function checks if the <code>power</code> given is a float or is negative, where it either errors or calls a different function to handle exponentiation.</p>
+
+<p>If neither cases hit, it checks for a third argument, which is always <code>None</code> according to <a href="https://github.com/Python/cPython/blob/3880f263d2994fb1eba25835dddccb0cf696fdf0/Python/ceval.c#L1358"><code>ceval.c</code></a><sup><a href="#fn1-13434" id="fnr1-13434" title="see footnote" class="footnote">1</a></sup>:</p>
+
+<pre><code>case TARGET(BINARY_POWER): {
+    PyObject *exp = POP();
+    PyObject *base = TOP();
+    PyObject *res = PyNumber_Power(base, exp, Py_None);
+    Py_DECREF(base);
+    Py_DECREF(exp);
+    SET_TOP(res);
+    if (res == NULL)
+        goto error;
+    DISPATCH();
+}
+</code></pre>
+
+<p>Finally, the function defines two routines: <code>REDUCE</code> for <a href="https://en.wikipedia.org/wiki/Barrett_reduction">modular reduction</a> and <code>MULT</code> for multiplication and reduction. The multiplication function uses <code>long_mul</code> for both values, which is the same function used in <code>BINARY_MULTIPLY</code>.</p>
+
+<pre><code>#define REDUCE(X)
+do {
+    if (c != NULL) {
+        if (l_divmod(X, c, NULL, &amp;temp) &lt; 0
+            goto Error;
+        Py_XDECREF(X);
+        X = temp;
+        temp = NULL;
+    }
+} while(0)
+
+#define MULT(X, Y, result)
+do {
+    temp = (PyLongObject *)long_mul(X, Y);
+    if (temp == NULL)
+        goto Error;
+    Py_XDECREF(result);
+    result = temp;
+    temp = NULL;
+    REDUCE(result);
+} while(0)
+</code></pre>
+
+<p>After that, the function uses left-to-right k-ary exponentiation defined in chapter 14.6<sup><a href="#fn2-13434" id="fnr2-13434" title="see footnote" class="footnote">2</a></sup> of the <a href="http://cacr.uwaterloo.ca/hac/about/chap14.pdf">Handbook of Applied Cryptography</a>:</p>
+
+<figure>
+<img src="img/l-t-r-algo.png" alt="" />
+</figure>
+
+<h2 id="charting-performance-differences">Charting Performance Differences</h2>
+
+<p>We can use the <code>timeit</code> library above to profile code at different values and see how the performance changes over time. </p>
+
+<h3 id="generating-functions">Generating Functions</h3>
+
+<p>To test the performance at different <code>power</code> values, we need to generate some functions.</p>
+
+<h4 id="mathpow-and-exponentiation">math.pow() and Exponentiation</h4>
+
+<p>Since both of these are already in the Python source, all we need to do is define a function for exponentiation we can call from inside a <code>timeit</code> call:</p>
+
+<pre><code>exponent = lambda base, power: base ** power
+</code></pre>
+
+<h4 id="chained-multiplication">Chained Multiplication</h4>
+
+<p>Since this changes each time the <code>power</code> changes<sup><a href="#fn3-13434" id="fnr3-13434" title="see footnote" class="footnote">3</a></sup>, we need to generate a new multiplication function each time the base changes. To do this, we can generate a string like <code>x*x*x</code> and call <code>eval()</code> on it to return a function:</p>
+
+<pre><code>def generate_mult_func(n):
+    mult_steps = '*'.join(['q'] * n)
+    func_string = f'lambda q: {mult_steps}'  # Keep this so we can print later
+    return eval(func_string), func_string
+</code></pre>
+
+<p>Thus, we can make a <code>multiply</code> function like so:</p>
+
+<pre><code>multiply, func_string = generate_mult_func(power)
+</code></pre>
+
+<p>If we call <code>generate_mult_func(4)</code>, <code>multiply</code> will be a lambda function that looks like this:</p>
+
+<pre><code>lambda q: q*q*q*q
+</code></pre>
+
+<h3 id="finding-the-crossover">Finding the Crossover</h3>
+
+<p>Using the code posted <a href="https://repl.it/@reagentx/Find-Crossover">here</a>, we can determine at what point <code>multiply</code> becomes less efficient than <code>exponent</code>.</p>
+
+<p>Staring with these values:</p>
+
+<pre><code>base = 2
+power = 2
+</code></pre>
+
+<p>We loop until the time it takes to execute <code>100,000</code> iterations of <code>multiply</code> is slower than executing <code>100,000</code> iterations of <code>exponent</code>. Initially, here are the timings, with <code>math.pow()</code> serving as a point of comparison:</p>
+
+<pre><code>Starting speeds:
+Multiply time   11.56 ms
+Exponent time   35.82 ms
+math.pow time   16.73 ms
+</code></pre>
+
+<p>When running on <a href="https://repl.it/@reagentx/Find-Crossover">repl.it</a>, Python finds the crossover in 1.2s:</p>
+
+<pre><code>Crossover found in 1.2 s:
+Base, power     2, 15
+Multiply time   43.05 ms
+Exponent time   39.70 ms
+math.pow time   16.42 ms
+Multiply func   lambda q: q*q*q*q*q*q*q*q*q*q*q*q*q*q*q
+</code></pre>
+
+<p>Thus, chaining multiplication together is faster until our expression gets to <code>2^14</code>; at <code>2^15</code> exponentiation becomes faster.</p>
+
+<h3 id="charting-the-performance">Charting the Performance</h3>
+
+<p>Using Pandas, we can keep track of the timing at each power:</p>
+
+<pre><code>Power  multiply  exponent  math.pow
+    2  0.011562  0.035822  0.016731
+    3  0.013043  0.033764  0.014614
+    4  0.015307  0.032323  0.015349
+    5  0.015974  0.033678  0.016470
+    6  0.017917  0.032465  0.015282
+    7  0.019147  0.034249  0.014993
+    8  0.020042  0.034530  0.015794
+    9  0.023667  0.038041  0.016430
+   10  0.029137  0.038911  0.016717
+   11  0.032310  0.040869  0.016580
+   12  0.033338  0.036693  0.014642
+   13  0.035552  0.037233  0.015178
+   14  0.037351  0.037806  0.015666
+   15  0.043046  0.039704  0.016415
+</code></pre>
+
+<p>From here, it is very simple to generate a line graph:</p>
+
+<pre><code>plot = df.plot().get_figure()
+plot.savefig('viz.png')
+</code></pre>
+
+<figure>
+<img src="img/viz.png" alt="" />
+</figure>
+
+<p>Interestingly, <code>math.pow()</code> and <code>exponent</code> mostly perform at the same rate, while our <code>multiply</code> functions vary wildly. Unsurprisingly, the longer the multiplication chain, the longer it takes to execute.</p>
+
+<h2 id="more-performance-testing">More Performance Testing</h2>
+
+<p>While the crossover is interesting, this doesn’t show what happens at powers larger than 15. Going up through <code>1000</code>, we get the following trend:</p>
+
+<figure>
+<img src="img/viz_1k.png" alt="" />
+</figure>
+
+<p>When we zoom in so that <code>math.pow()</code> and <code>exponent</code> are more pronounced, we see the same performance trend continue:</p>
+
+<figure>
+<img src="img/viz_1k_zoom.png" alt="" />
+</figure>
+
+<p>While using <code>**</code> the time gradually increases, <code>math.pow()</code> generally has executes at around the same speed.</p>
+
+<h2 id="conclusions">Conclusions</h2>
+
+<p>When writing algorithms that use small exponents, here proved less than <code>15</code>, it is faster to chain multiplication together than to use the <code>**</code> exponentiation operator. Additionally, <code>math.pow()</code> is more efficient than chained multiplication at powers larger than <code>5</code> and always more efficient than the <code>**</code> operator, so there is never a reason to use <code>**</code>.</p>
+
+<p>Additionally, this is also true in JavaScript<sup><a href="#fn4-13434" id="fnr4-13434" title="see footnote" class="footnote">4</a></sup>. Thanks @<a href="https://twitter.com/_juliancoleman">juliancoleman</a> for <a href="https://jsperf.com/mult-vs-expo">this</a> comparison!</p>
+
+<hr />
+<center>
+<p>Discussion: <a href="https://www.reddit.com/r/Python/comments/bv1ez2/performance_of_various_python_exponentiation/">r/Python</a>, <a href="https://news.ycombinator.com/item?id=20057582">Hacker News</a> | View as: <a href="assets/post.pdf">PDF</a>, <a href="assets/post.md">Markdown</a></p>
+</center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-13434">
+<p>This is used as the <code>modulus</code> parameter in the stdlib <code>pow()</code> and <code>math.pow()</code> functions: <code>pow(2, 8, 10)</code> results in <code>2^8 % 10</code>, or <code>6</code> <a href="#fnr1-13434" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-13434">
+<p>According to the Python <a href="https://github.com/Python/cPython/blob/b509d52083e156f97d6bd36f2f894a052e960f03/Objects/longobject.c#L4263">source</a>, specifically section 14.82. <a href="#fnr2-13434" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-13434">
+<p><code>x ** 2 == x * x</code>, <code>x ** 3 == x * x * x</code> and so on.  <a href="#fnr3-13434" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn4-13434">
+<p>Except in Safari, where <code>Math.pow()</code> is the slowest. <a href="#fnr4-13434" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

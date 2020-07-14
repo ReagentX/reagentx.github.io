@@ -1,5 +1,25 @@
 [
     {
+        "slug": "blog/why-my-lambdas-timeout/",
+        "title": "Why My Lambdas Unexpectedly Timed Out",
+        "date": "05/23/20"
+    },
+    {
+        "slug": "blog/synchronous-code-in-asynchronous-contexts/",
+        "title": "Synchronous Code in Asynchronous Contexts",
+        "date": "04/26/20"
+    },
+    {
+        "slug": "blog/multiprocessing-changes-python-3-8/",
+        "title": "Multiprocessing Changes in Python 3.8",
+        "date": "01/30/20"
+    },
+    {
+        "slug": "blog/debugging-an-obscure-django-problem/",
+        "title": "Debugging an Obscure Django Problem",
+        "date": "11/19/19"
+    },
+    {
         "slug": "blog/python-floor-division/",
         "title": "Floor Division in Python",
         "date": "10/22/19"

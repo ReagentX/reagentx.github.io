@@ -1,0 +1,401 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" type="text/css" href="/css/highlight.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript" src="/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">January 30, 2020</time>
+<title>Multiprocessing Changes in Python 3.8</title>
+<h1 class="article_title">Multiprocessing Changes in Python 3.8</h1>
+
+<div class="TOC">
+<ul>
+<li><a href="#python-38-safety-on-macos">Python 3.8 Safety on MacOS</a>
+
+<ul>
+<li><a href="#37-and-prior">3.7 and prior</a>
+
+<ul>
+<li><a href="#disassembly">Disassembly</a></li>
+<li><a href="#python-cell-objects">Python Cell Objects</a></li>
+<li><a href="#cpython-source">CPython Source</a></li>
+</ul></li>
+<li><a href="#38-and-beyond">3.8 and Beyond</a>
+
+<ul>
+<li><a href="#disassembly">Disassembly</a></li>
+<li><a href="#stack-variables">Stack Variables</a>
+
+<ul>
+<li><a href="#old-process-stack">Old Process Stack</a></li>
+<li><a href="#new-process-stack">New Process Stack</a></li>
+</ul></li>
+<li><a href="#picklingerror-crash">PicklingError Crash</a></li>
+</ul>
+</div>
+
+<h1 id="python-38-safety-on-macos">Python 3.8 Safety on MacOS</h1>
+
+<p>With the release of Python 3.8 came many improvements, both in additional features and in safety. One of those additions to make Python a safer language altered how processes are created when running on MacOS. These changes deeply affect how the existing concurrency model works in Python, especially when using some popular third party libraries.</p>
+
+<h2 id="37-and-prior">3.7 and prior</h2>
+
+<p>Multiprocessing used to default to using <code>fork()</code> when creating a new process. This is important because using <code>fork()</code> ensured that the new child process had access to everything the parent process had access to:</p>
+
+<pre><code class="python">&gt;&gt;&gt; some_data = {1: &quot;one&quot;, 2: &quot;three&quot;}
+&gt;&gt;&gt; func = lambda: print(some_data.get(2, None))
+&gt;&gt;&gt; process = multiprocessing.Process(target=func)
+&gt;&gt;&gt; process.start()
+&gt;&gt;&gt; process.join()
+three
+</code></pre>
+
+<p>Note we could not write to the parent's memory, only read and modify the copy sent to the child’s stack:</p>
+
+<pre><code class="python">&gt;&gt;&gt; some_data = {1: &quot;one&quot;, 2: &quot;three&quot;}
+&gt;&gt;&gt; func = lambda: some_data.update({2: &quot;two&quot;})
+&gt;&gt;&gt; process = multiprocessing.Process(target=func)
+&gt;&gt;&gt; process.start()
+&gt;&gt;&gt; process.join()
+&gt;&gt;&gt; some_data
+{1: &quot;one&quot;, 2: &quot;three&quot;}
+</code></pre>
+
+<h3 id="disassembly">Disassembly</h3>
+
+<p>This works because using <code>fork()</code> copies the entire stack, which allows the parent caller to pickle the data in the variables we have access to and send that data to the child processes. We can verify what happens when we disassemble the lambda:</p>
+
+<pre><code class="python">def main():
+    some_data = {1: &quot;one&quot;, 2: &quot;three&quot;}
+    func = lambda: some_data.get(2)
+
+    process = multiprocessing.Process(target=func)
+    process.start()
+    process.join()
+    print(some_data)
+
+
+if __name__ == &quot;__main__&quot;:
+    dis.dis(main)
+</code></pre>
+
+<p>This disassembles to:</p>
+
+<pre><code class="log">  7           0 LOAD_CONST               1 ('one')
+              2 LOAD_CONST               2 ('three')
+              4 LOAD_CONST               3 ((1, 2))
+              6 BUILD_CONST_KEY_MAP      2
+              8 STORE_DEREF              0 (some_data)
+
+  8          10 LOAD_CLOSURE             0 (some_data)
+             12 BUILD_TUPLE              1
+             14 LOAD_CONST               4 (&lt;code object &lt;lambda&gt; at 0x1052059c0, file &quot;test.py&quot;, line 8&gt;)
+             16 LOAD_CONST               5 ('main.&lt;locals&gt;.&lt;lambda&gt;')
+             18 MAKE_FUNCTION            8
+             20 STORE_FAST               0 (func)
+
+ 10          22 LOAD_GLOBAL              0 (multiprocessing)
+             24 LOAD_ATTR                1 (Process)
+             26 LOAD_FAST                0 (func)
+             28 LOAD_CONST               6 (('target',))
+             30 CALL_FUNCTION_KW         1
+             32 STORE_FAST               1 (process)
+
+ 11          34 LOAD_FAST                1 (process)
+             36 LOAD_METHOD              2 (start)
+             38 CALL_METHOD              0
+             40 POP_TOP
+
+ 12          42 LOAD_FAST                1 (process)
+             44 LOAD_METHOD              3 (join)
+             46 CALL_METHOD              0
+             48 POP_TOP
+             50 LOAD_CONST               0 (None)
+             52 RETURN_VALUE
+
+Disassembly of &lt;code object &lt;lambda&gt; at 0x1052059c0, file &quot;test.py&quot;, line 8&gt;:
+  8           0 LOAD_DEREF               0 (some_data)
+              2 LOAD_METHOD              0 (get)
+              4 LOAD_CONST               1 (2)
+              6 CALL_METHOD              1
+              8 RETURN_VALUE
+</code></pre>
+
+<p>The interesting operations happen inside of the <code>lambda</code> object at the end: we first dereference <code>some_data</code>, then <code>get</code> the key <code>2</code>. This all makes sense, because we <code>STORE_DEREF</code> it. Put simply, we store the data at the top of the stack into a <a href="https://docs.python.org/3/c-api/cell.html">cell</a><sup><a href="#fn1-19321" id="fnr1-19321" title="see footnote" class="footnote">1</a></sup>. When we later load it, Python loads the cell and pushes a reference to the object the cell contains to the top of the stack.</p>
+
+<h3 id="python-cell-objects">Python Cell Objects</h3>
+
+<p>What CPython does is cast <code>some_data</code> from a local variable to an independent cell object. Because the cell object exists independently from <code>main()</code>s stack frame, it can be dereferenced by the <code>lambda</code>.</p>
+
+<pre><code>Python 3.7.4 (default, Aug 15 2019, 12:39:43)
+[Clang 10.0.1 (clang-1001.0.46.4)] on darwin
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import multiprocessing
+&gt;&gt;&gt; some_data = {1: &quot;one&quot;, 2: &quot;three&quot;}
+&gt;&gt;&gt; func = lambda: some_data.get(2)
+&gt;&gt;&gt; process = multiprocessing.Process(target=func)
+&gt;&gt;&gt; process.start()
+&gt;&gt;&gt; process.join()
+&gt;&gt;&gt;
+</code></pre>
+
+<h3 id="cpython-source">CPython Source</h3>
+
+<p>To create a child process prior to 3.8, CPython uses the <code>Popen</code> class from <a href="https://github.com/python/cpython/blob/14fd925a18fe3db0922a7d798e373102fe7a8a9c/Lib/multiprocessing/popen_fork.py#L12"><code>popen_fork.py</code></a>. This makes a C system call to <code>fork()</code>, which has <a href="https://pubs.opengroup.org/onlinepubs/9699919799/functions/fork.html">implementation standards</a><sup><a href="#fn2-19321" id="fnr2-19321" title="see footnote" class="footnote">2</a></sup>:</p>
+
+<blockquote>
+<p>The fork() function shall create a new process. The new process (child process) shall be an exact copy of the calling process (parent process)…</p>
+</blockquote>
+
+<p>On MacOS (darwin) this implementation comes from <a href="https://github.com/apple/darwin-xnu/blob/master/libsyscall/custom/__fork.s#L77"><code>__fork.s</code></a>:</p>
+
+<pre><code class="x86">LEAF(___fork, 0)
+    subq  $24, %rsp   // Align the stack, plus room for local storage
+
+    movl     $ SYSCALL_CONSTRUCT_UNIX(SYS_fork),%eax; // code for fork -&gt; rax
+    UNIX_SYSCALL_TRAP        // do the system call
+    jnc    L1            // jump if CF==0
+
+    movq    %rax, %rdi
+    CALL_EXTERN(_cerror)
+    movq    $-1, %rax
+    addq    $24, %rsp   // restore the stack
+    ret
+    
+L1:
+    orl    %edx,%edx    // CF=OF=0,  ZF set if zero result    
+    jz    L2        // parent, since r1 == 0 in parent, 1 in child
+    
+    //child here...
+    xorq    %rax, %rax
+    PICIFY(__current_pid)
+    movl    %eax,(%r11)
+L2:
+    // parent ends up here skipping child portion
+    addq    $24, %rsp   // restore the stack
+    ret
+</code></pre>
+
+<p>This assembly code calls the kernel to create the fork, so the flow looks like <code>fork()</code> -&gt; <code>Darwin</code> wrapper -&gt; raw <code>syscall</code> invocation -&gt; transition to kernel mode -&gt; <code>syscall</code> lookup -&gt; <code>sys_fork()</code> -&gt; <code>do_fork()</code>. At the end of all this, we have created a new process with its own stack that exists a distinct copy of the original stack. </p>
+
+<h2 id="38-and-beyond">3.8 and Beyond</h2>
+
+<p>In Python 3.8 however, the default method to create a new process changed to <code>spawn()</code>, which has entirely different behavior. The child process now crashes because it cannot dereference the data we are asking it to:</p>
+
+<pre><code>Python 3.8.1 (default, Jan 24 2020, 16:43:46)
+[Clang 10.0.1 (clang-1001.0.46.4)] on darwin
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import multiprocessing
+&gt;&gt;&gt; some_data = {1: &quot;one&quot;, 2: &quot;three&quot;}
+&gt;&gt;&gt; func = lambda: some_data.get(2)
+&gt;&gt;&gt; process = multiprocessing.Process(target=func)
+&gt;&gt;&gt; process.start()
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/multiprocessing/process.py&quot;, line 121, in start
+    self._popen = self._Popen(self)
+  File &quot;/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/multiprocessing/context.py&quot;, line 224, in _Popen
+    return _default_context.get_context().Process._Popen(process_obj)
+  File &quot;/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/multiprocessing/context.py&quot;, line 283, in _Popen
+    return Popen(process_obj)
+  File &quot;/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/multiprocessing/popen_spawn_posix.py&quot;, line 32, in __init__
+    super().__init__(process_obj)
+  File &quot;/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/multiprocessing/popen_fork.py&quot;, line 19, in __init__
+    self._launch(process_obj)
+  File &quot;/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/multiprocessing/popen_spawn_posix.py&quot;, line 47, in _launch
+    reduction.dump(process_obj, fp)
+  File &quot;/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/multiprocessing/reduction.py&quot;, line 60, in dump
+    ForkingPickler(file, protocol).dump(obj)
+_pickle.PicklingError: Can't pickle &lt;function &lt;lambda&gt; at 0x10510bc10&gt;: attribute lookup &lt;lambda&gt; on __main__ failed
+</code></pre>
+
+<h3 id="disassembly">Disassembly</h3>
+
+<p>The disassembly of the lambda expression is the same:</p>
+
+<pre><code>Disassembly of &lt;code object &lt;lambda&gt; at 0x1052059c0, file &quot;test.py&quot;, line 8&gt;:
+  8           0 LOAD_DEREF               0 (some_data)
+              2 LOAD_METHOD              0 (get)
+              4 LOAD_CONST               1 (2)
+              6 CALL_METHOD              1
+              8 RETURN_VALUE
+</code></pre>
+
+<p>However, the first <code>LOAD_DEREF</code> fails because the parent process did not copy the stack into a cell for the child to access, thus leading to the <code>_pickle.PicklingError</code> the interpreter <a href="https://github.com/python/cpython/blob/14fd925a18fe3db0922a7d798e373102fe7a8a9c/Lib/multiprocessing/spawn.py#L124">raises</a>.</p>
+
+<h3 id="stack-variables">Stack Variables</h3>
+
+<p>We can verify this by inspecting the global stack when inside the parent process.</p>
+
+<h4 id="old-process-stack">Old Process Stack</h4>
+
+<p>If we re-write the lambda to instead print the global<sup><a href="#fn3-19321" id="fnr3-19321" title="see footnote" class="footnote">3</a></sup> variables the process has access to, Python tells us that it can see <code>'some_data': {1: 'one', 2: 'three'}</code> as we would expect when forking the entire process:</p>
+
+<pre><code>&gt;&gt;&gt; process = multiprocessing.Process(target=globals)
+&gt;&gt;&gt; process.start()
+&gt;&gt;&gt; {'__name__': '__main__', '__doc__': None, '__package__': None, '__loader__': &lt;class '_frozen_importlib.BuiltinImporter'&gt;, '__spec__': None, '__annotations__': {}, '__builtins__': &lt;module 'builtins' (built-in)&gt;, 'some_data': {1: 'one', 2: 'three'}, 'func': &lt;function &lt;lambda&gt; at 0x1040230e0&gt;, 'multiprocessing': &lt;module 'multiprocessing' from '/Users/chris/.pyenv/versions/3.7.6/lib/python3.7/multiprocessing/__init__.py'&gt;, 'process': &lt;Process(Process-12, started)&gt;}
+</code></pre>
+
+<p>As expected, this looks almost identical to a fresh interpreter instance:</p>
+
+<pre><code>Python 3.7.6 (default, Jan 24 2020, 20:01:36)
+[Clang 11.0.0 (clang-1100.0.33.8)] on darwin
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; globals()
+{'__name__': '__main__', '__doc__': None, '__package__': None, '__loader__': &lt;class '_frozen_importlib.BuiltinImporter'&gt;, '__spec__': None, '__annotations__': {}, '__builtins__': &lt;module 'builtins' (built-in)&gt;}
+</code></pre>
+
+<h4 id="new-process-stack">New Process Stack</h4>
+
+<p>However, when we run this same code in Python 3.8, the global stack of the child process looks totally different:</p>
+
+<pre><code>&gt;&gt;&gt; proc = multiprocessing.Process(target=globals)
+&gt;&gt;&gt; proc.start()
+&gt;&gt;&gt; {'log_to_stderr': False, 'authkey': b'\x11@nPJ\xa3\xfeY\xbc%\xf8J\xc6`\xc1\xfd\xce\xca\x98EB\xb2\x8a\xefg\x17,\xf0\x93\xd3t\xb7', 'name': 'Process-11', 'sys_path': ['/Users/chris', '/Users/chris/.pyenv/versions/3.8.1/lib/python38.zip', '/Users/chris/.pyenv/versions/3.8.1/lib/python3.8', '/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/lib-dynload', '/Users/chris/.pyenv/versions/3.8.1/lib/python3.8/site-packages'], 'sys_argv': [''], 'orig_dir': '/Users/chris', 'dir': '/Users/chris', 'start_method': 'spawn'}
+</code></pre>
+
+<p>These data come from <a href="https://github.com/python/cpython/blob/c09a9f56c08d80567454cae6f78f738a89e1ae94/Lib/multiprocessing/spawn.py#L150"><code>get_preparation_data</code></a>, which get sent to <a href="https://github.com/python/cpython/blob/c09a9f56c08d80567454cae6f78f738a89e1ae94/Lib/multiprocessing/spawn.py#L78"><code>get_command_line</code></a>, and are used to create an new instance of the Python interpreter to pipe commands to:</p>
+
+<pre><code class="python">def get_command_line(**kwds):
+    '''
+    Returns prefix of command line used for spawning a child process
+    '''
+    if getattr(sys, 'frozen', False):
+        return ([sys.executable, '--multiprocessing-fork'] +
+                ['%s=%r' % item for item in kwds.items()])
+    else:
+        prog = 'from multiprocessing.spawn import spawn_main; spawn_main(%s)'
+        prog %= ', '.join('%s=%r' % item for item in kwds.items())
+        opts = util._args_from_interpreter_flags()
+        return [_python_exe] + opts + ['-c', prog, '--multiprocessing-fork']\
+</code></pre>
+
+<p>Once Python has the start command, it runs it via <a href="https://github.com/python/cpython/blob/c09a9f56c08d80567454cae6f78f738a89e1ae94/Lib/multiprocessing/util.py#L412"><code>spawnv_passfds</code></a>:</p>
+
+<pre><code class="python">def spawnv_passfds(path, args, passfds):
+    import _posixsubprocess
+    passfds = tuple(sorted(map(int, passfds)))
+    errpipe_read, errpipe_write = os.pipe()
+    try:
+        return _posixsubprocess.fork_exec(
+            args, [os.fsencode(path)], True, passfds, None, None,
+            -1, -1, -1, -1, -1, -1, errpipe_read, errpipe_write,
+            False, False, None)
+    finally:
+        os.close(errpipe_read)
+        os.close(errpipe_write)
+</code></pre>
+
+<h3 id="picklingerror-crash">PicklingError Crash</h3>
+
+<p>The reason we crash when unpickling is simple. Before creating the child process, Python <a href="https://github.com/python/cpython/blob/c09a9f56c08d80567454cae6f78f738a89e1ae94/Lib/multiprocessing/resource_tracker.py#L92">opens a pipe</a> in the parent process. When we get the <code>write</code> end of this pipe later, we <a href="https://github.com/python/cpython/blob/c09a9f56c08d80567454cae6f78f738a89e1ae94/Lib/multiprocessing/spawn.py#L113">duplicate</a> it, so it still has all of the references to data in the parent’s scope:</p>
+
+<pre><code class="python">def spawn_main(pipe_handle, parent_pid=None, tracker_fd=None):
+    '''
+    Run code specified by data received over pipe
+    '''
+    assert is_forking(sys.argv), &quot;Not forking&quot;
+    if sys.platform == 'win32':
+        …
+    else:
+        from . import resource_tracker
+        resource_tracker._resource_tracker._fd = tracker_fd
+        fd = pipe_handle
+        parent_sentinel = os.dup(pipe_handle)
+    exitcode = _main(fd, parent_sentinel)
+    sys.exit(exitcode)
+</code></pre>
+
+<p>In the call to <a href="https://github.com/python/cpython/blob/c09a9f56c08d80567454cae6f78f738a89e1ae94/Lib/multiprocessing/spawn.py#L120"><code>_main</code></a> we attempt to de-serialize the pipe, however we cannot because we attempt to access data that is not in the global scope of the new interpreter. Python only has access to data that a new interpreter would have as opposed to the entire parent’s stack<sup><a href="#fn4-19321" id="fnr4-19321" title="see footnote" class="footnote">4</a></sup>:</p>
+
+<pre><code class="log">
+__name__ multiprocessing.spawn
+__doc__ None
+__package__ multiprocessing
+__loader__ &lt;_frozen_importlib_external.SourceFileLoader object at 0x1037a9580&gt;
+__spec__ ModuleSpec(name='multiprocessing.spawn', loader=&lt;_frozen_importlib_external.SourceFileLoader object at 0x1037a9580&gt;, origin='/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/multiprocessing/spawn.py')
+__file__ /Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/multiprocessing/spawn.py
+__cached__ /Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/multiprocessing/__pycache__/spawn.cpython-38.pyc
+__builtins__ {'__name__': 'builtins', '__doc__': &quot;truncated&quot;, ..}
+os &lt;module 'os' from '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/os.py'&gt;
+sys &lt;module 'sys' (built-in)&gt;
+runpy &lt;module 'runpy' from '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/runpy.py'&gt;
+types &lt;module 'types' from '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/types.py'&gt;
+get_start_method &lt;bound method DefaultContext.get_start_method of &lt;multiprocessing.context.DefaultContext object at 0x10385bc10&gt;&gt;
+set_start_method &lt;bound method DefaultContext.set_start_method of &lt;multiprocessing.context.DefaultContext object at 0x10385bc10&gt;&gt;
+process &lt;module 'multiprocessing.process' from '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/multiprocessing/process.py'&gt;
+reduction &lt;module 'multiprocessing.reduction' from '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/multiprocessing/reduction.py'&gt;
+util &lt;module 'multiprocessing.util' from '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/multiprocessing/util.py'&gt;
+__all__ ['_main', 'freeze_support', 'set_executable', 'get_executable', 'get_preparation_data', 'get_command_line', 'import_main_path']
+WINEXE False
+WINSERVICE False
+_python_exe /Library/Frameworks/Python.framework/Versions/3.8/bin/python3.8
+set_executable &lt;function set_executable at 0x103954820&gt;
+get_executable &lt;function get_executable at 0x1039c5ee0&gt;
+is_forking &lt;function is_forking at 0x1039c5f70&gt;
+freeze_support &lt;function freeze_support at 0x1039c1040&gt;
+get_command_line &lt;function get_command_line at 0x1039c10d0&gt;
+spawn_main &lt;function spawn_main at 0x1039c1160&gt;
+_main &lt;function _main at 0x1039c11f0&gt;
+_check_not_importing_main &lt;function _check_not_importing_main at 0x1039c1280&gt;
+get_preparation_data &lt;function get_preparation_data at 0x1039c1310&gt;
+old_main_modules []
+prepare &lt;function prepare at 0x1039c13a0&gt;
+_fixup_main_from_name &lt;function _fixup_main_from_name at 0x1039c1430&gt;
+_fixup_main_from_path &lt;function _fixup_main_from_path at 0x1039c14c0&gt;
+import_main_path &lt;function import_main_path at 0x1039c1550&gt;\
+</code></pre>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-19321">
+<p>A cell object essentially holds a reference to another object <a href="#fnr1-19321" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-19321">
+<p>This definition is also available in the Linux <a href="http://man7.org/linux/man-pages/man2/fork.2.html">man pages</a>. <a href="#fnr2-19321" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-19321">
+<p>We can inspect these with <a href="https://docs.python.org/3/library/functions.html#globals"><code>globals()</code></a>. <a href="#fnr3-19321" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn4-19321">
+<p>We can view this information by adding a line like <code>(print(g, v[g]) for g in v)</code> before we de-serialize. <a href="#fnr4-19321" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

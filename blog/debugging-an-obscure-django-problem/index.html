@@ -1,0 +1,685 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" type="text/css" href="/css/highlight.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">November 19, 2019</time>
+<title>Debugging an Obscure Django Problem</title>
+<h1 class="article_title">Debugging an Obscure Django Problem</h1>
+
+<div class="TOC">
+<ul>
+<li><a href="#behavior">Behavior</a></li>
+<li><a href="#environment">Environment</a>
+
+<ul>
+<li><a href="#known-issues">Known Issues</a></li>
+</ul></li>
+<li><a href="#observed-behaviors">Observed Behaviors</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a>
+
+<ul>
+<li><a href="#original-python-code">Original Python Code</a></li>
+<li><a href="#raw-sql-in-django">Raw SQL in Django</a></li>
+<li><a href="#connecting-directly-to-mysql">Connecting Directly to MySQL</a></li>
+</ul></li>
+<li><a href="#first-solution-attempt">First solution attempt</a></li>
+<li><a href="#second-solution-attempt">Second solution attempt</a></li>
+<li><a href="#third-solution-attempt">Third Solution Attempt</a>
+
+<ul>
+<li><a href="#rds-logs">RDS Logs</a></li>
+<li><a href="#packet-analysis">Packet Analysis</a></li>
+<li><a href="#wireshark-analysis">Wireshark Analysis</a>
+
+<ul>
+<li><a href="#malformed-packets-galore">Malformed Packets Galore</a></li>
+<li><a href="#mysql-end-of-file">MySQL End of File</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#django-bug-report">Django Bug Report</a></li>
+<li><a href="#fourth-solution-attempt">Fourth Solution Attempt</a></li>
+<li><a href="#fifth-solution-attempt">Fifth Solution Attempt</a></li>
+<li><a href="#sixth-solution-attempt">Sixth Solution Attempt</a>
+
+<ul>
+<li><a href="#solution">Solution</a></li>
+</ul></li>
+<li><a href="#other-observations">Other Observations</a></li>
+</ul>
+</div>
+
+<p>A journey in debugging a Django issue.</p>
+
+<h1 id="behavior">Behavior</h1>
+
+<p>Yesterday, we started to see this crash in <code>develop</code> after we deployed a new backend.</p>
+
+<pre><code class="python">error (2027, 'Malformed packet')
+&lt;class 'django.db.utils.OperationalError'&gt; on line 513
+</code></pre>
+
+<p>Where line 513 executed the QuerySet.</p>
+
+<p>This issue only occurs when querying two IDs, <code>0475776</code> and <code>0975933</code>. All other single ID and all multiple ID queries work, even those with either or both of these IDs.</p>
+
+<p>This issue also only occurred on <code>develop</code>, not locally, even though the database is the same.</p>
+
+<h1 id="environment">Environment</h1>
+
+<ul>
+<li>MySQL 5.7.12 (MySQL Community Server (GPL))
+
+<ul>
+<li>Hosted on AWS RDS</li>
+<li>Amazon Linux 2</li>
+</ul></li>
+<li>Django 2.1.3</li>
+<li>mysqlclient 1.4.4
+
+<ul>
+<li>mariadb-devel-5.5.64-1.amzn2.x86_64</li>
+</ul></li>
+</ul>
+
+<h2 id="known-issues">Known Issues</h2>
+
+<p>According to <a href="https://bugs.mysql.com/bug.php?id=77298">MySQL bug 77298</a>, prior to 5.7.8, a bug eerily similar to mine caused this issue:</p>
+
+<blockquote>
+<p>For small values of the read_rnd_buffer_size system variable, internal caching of temporary results could fail and cause query execution failure.</p>
+</blockquote>
+
+<p>Since we are using a newer version, this couldn't be the issue.</p>
+
+<p>According to a <a href="https://dba.stackexchange.com/questions/102567/sql-error-2027-malformed-packet">StackExchange</a> thread, we may have <code>max_allowed_packet</code> set too low. However, we are able to get the data for this query by modifying some parameters, so this cannot be the issue either. Further, our Wireshark analysis shows all packets are smaller than the default value of <code>4194304</code> bytes.</p>
+
+<h1 id="observed-behaviors">Observed Behaviors</h1>
+
+<ul>
+<li>Changing any query parameters will make them successful</li>
+<li>Removing any parameters will make it work as well</li>
+<li>Adding a <code>LIMIT</code>, even if it is larger than the data returned, will make it work</li>
+<li>Only a few <code>prov_id</code> items have this issue</li>
+<li>Combining a broken <code>prov_id</code> with a <code>prov_id</code> that has no rows works</li>
+</ul>
+
+<h1 id="troubleshooting">Troubleshooting</h1>
+
+<p>This is a perplexing problem. I did not want to monkey patch it like this when the QuerySet gets executed:</p>
+
+<pre><code class="python">try:
+    ingested_df = pd.DataFrame.from_records(data=ingested, coerce_float=True)
+except Exception as e:
+    LOGGER.error('%s: %s, on line %s', e, e.__class__, e.__traceback__.tb_lineno)
+    LOGGER.error('Monkey patching query with `LIMIT = 99999999999')
+    ingested = ingested[:99999999999]
+    ingested_df = pd.DataFrame.from_records(data=ingested, coerce_float=True)
+</code></pre>
+
+<p>Instead, I tried to make a few changes to the QuerySet chaining steps.</p>
+
+<h2 id="original-python-code">Original Python Code</h2>
+
+<pre><code class="python"># Initial QuerySet, filter on dates, med status, and provider
+ingested = Model.objects.filter(Q(beg_date__range=prior_range) |
+                                Q(beg_date__range=current_range),
+                                med_cat='N',
+                                prov_id__in=facility_ids,
+                                ).values(
+                                     'prov_id',
+                                     'beg_date',
+                                     'method',
+                                     'category',
+                                     'code',
+                                     'allowed',
+                                     'count',
+                                     'charge'
+                                )
+
+# Handle removing nulls and blanks
+if remove_null:
+    ingested = ingested.exclude(Q(category__isnull=True) | Q(code__isnull=True))
+if remove_blank:
+    # Handle case where empty strings were stored as string literal `&quot;&quot;`
+    ingested = ingested.exclude(Q(category__exact='') | Q(code__exact='') |
+                                Q(category__exact='&quot;&quot;') | Q(code__exact='&quot;&quot;'))
+
+# Handle excluding categories from api list param
+ingested = ingested.exclude(category__in=excluded_categories)
+
+# Handle payment type filter
+if payment_method != 'all':
+    ingested = ingested.filter(method=payment_method)
+</code></pre>
+
+<h2 id="raw-sql-in-django">Raw SQL in Django</h2>
+
+<p>Manually making the query by writing the same thing in raw SQL yields the same results.</p>
+
+<pre><code class="sql">SELECT `tables_ingesting`.`clm_id_svc_ln_num`,
+    `tables_ingesting`.`prov_id`,
+    `tables_ingesting`.`beg_date`,
+    `tables_ingesting`.`method`,
+    `tables_ingesting`.`category`,
+    `tables_ingesting`.`code`,
+    `tables_ingesting`.`allowed`,
+    `tables_ingesting`.`count`,
+    `tables_ingesting`.`charge`,
+    `tables_ingesting`.`count`
+FROM   `tables_ingesting`
+WHERE  ( (      `tables_ingesting`.`beg_date` BETWEEN '2018-10-01' AND '2018-12-31'
+        OR      `tables_ingesting`.`beg_date` BETWEEN '2019-01-01' AND '2019-03-31' )
+        AND     `tables_ingesting`.`prov_id` IN ( '0475776' )
+        AND     `tables_ingesting`.`medcr_ind` = 'N'
+        AND     NOT (( `tables_ingesting`.`category` IS NULL
+                        OR `tables_ingesting`.`code` IS NULL ))
+        AND     NOT (( `tables_ingesting`.`category` = '&quot;&quot;'
+                        OR `tables_ingesting`.`code` = '&quot;&quot;'
+                        OR `tables_ingesting`.`category` = &quot;&quot;
+                        OR `tables_ingesting`.`code` = &quot;&quot; ))
+        );  
+</code></pre>
+
+<p>Changing anything about the queries make them successful: for example, <code>2019-03-31</code> end date fails, but using <code>2019-03-30</code> works, even though neither of those dates have any data (thus the data is the same). Removing any of the filters will make it work as well, even when the filter does not match any rows.</p>
+
+<p>Adding a <code>LIMIT</code> clause to the query makes it work, even if the limit is greater than the number of rows returned.</p>
+
+<h2 id="connecting-directly-to-mysql">Connecting Directly to MySQL</h2>
+
+<p>The query Django prints out returns the correct data when sent directly to MySQL:</p>
+
+<pre><code class="bash">mysql&gt; SELECT `tables_ingesting`.`prov_id`, `tables_ingesting`.`beg_date`, `tables_ingesting`.`method`, `tables_ingesting`.`category`, `tables_ingesting`.`code`, `tables_ingesting`.`allowed`, `tables_ingesting`.`count`, `tables_ingesting`.`charge` FROM `tables_ingesting` WHERE ((`tables_ingesting`.`beg_date` BETWEEN '2018-10-01' AND '2018-12-31' OR `tables_ingesting`.`beg_date` BETWEEN '2019-01-01' AND '2019-03-31') AND `tables_ingesting`.`prov_id` IN (0975933) AND `tables_ingesting`.`medcr_ind` = 'N' AND NOT ((`tables_ingesting`.`category` IS NULL OR `tables_ingesting`.`code` IS NULL)) AND NOT ((`tables_ingesting`.`category` = '' OR `tables_ingesting`.`code` = '' OR `tables_ingesting`.`category` = '&quot;&quot;' OR `tables_ingesting`.`code` = '&quot;&quot;')));
+...
+12587 rows in set (0.29 sec)
+</code></pre>
+
+<h1 id="first-solution-attempt">First solution attempt</h1>
+
+<p>I noticed that when I built the QuerySet I asked for the same column twice:</p>
+
+<pre><code class="python">ingested.values('prov_id',
+                'beg_date',
+                'method',
+                'category',
+                'code',
+                'allowed',
+                'count',
+                'charge',
+                'count')
+</code></pre>
+
+<p>I removed the second <code>count</code>. Since the query started working with this change, we merged it to <code>develop</code>. Once we verified it was working there, we deployed the new UI/Backend this was part of to <code>production</code>.</p>
+
+<p>After this deploy, both <code>production</code> and <code>develop</code> worked, but <code>local</code> no longer worked. Again, <code>local</code> and <code>develop</code> use the same backend.</p>
+
+<h1 id="second-solution-attempt">Second solution attempt</h1>
+
+<p>In the <code>local</code> server, when the QuerySet got executed, we would get back no data, even though the QuerySet had preview data before it got executed. Further, the same behavior where adding a limit made it work came back. Instead of the malformed packet error, however, we now were getting this:</p>
+
+<pre><code class="python">error (2013, 'Lost connection to MySQL server during query')
+&lt;class 'django.db.utils.OperationalError'&gt; on line 511
+</code></pre>
+
+<p>Where line 511 was where the QuerySet got executed.</p>
+
+<p>Again, changing any aspect of the query made it work with the exact same behavior of the previous problem in <code>develop</code>. Since this only happened to single providers, I thought it might have been an issue with the following code:</p>
+
+<pre><code class="python">ingested = Model.objects.filter(Q(beg_date__range=prior_range) |
+                                Q(beg_date__range=current_range),
+                                med_cat='N',
+                                prov_id__in=facility_ids,
+                                )
+</code></pre>
+
+<p>The parameter <code>prov_id__in=facility_ids</code> generates the following SQL:</p>
+
+<pre><code class="sql">...
+AND `tables_ingesting`.`prov_id` IN ( '0475776' )
+...
+</code></pre>
+
+<p>Replacing that Model block with the following yielded a solution:</p>
+
+<pre><code class="python">ingested = Model.objects.filter(Q(beg_date__range=prior_range) |
+                                Q(beg_date__range=current_range),
+                                med_cat='N')
+if len(facility_ids) &gt; 1:
+    ingested = ingested.filter(prov_id__in=facility_ids)
+else:
+    ingested = ingested.filter(prov_id=facility_ids[0])
+</code></pre>
+
+<p>This means we now generate this SQL for a single provider:</p>
+
+<pre><code class="sql">...
+AND `tables_ingesting`.`prov_id` = '0475776'
+...
+</code></pre>
+
+<p>While this works, it does not explain either MySQL error, which worries me with regard to using this code in <code>production</code>.</p>
+
+<h1 id="third-solution-attempt">Third Solution Attempt</h1>
+
+<p>This patch did not last long, as over the weekend we started to see <code>(2027, 'Malformed packet')</code> show up in the logs again, but only in <code>production</code> and <code>develop</code>, not locally, which is the same as before we implemented either fix.</p>
+
+<h2 id="rds-logs">RDS Logs</h2>
+
+<p>RDS Logs showed the following:</p>
+
+<pre><code class="log">2019-10-28T17:28:05.868458Z 1308445 [Note] Aborted connection 1308445 to db: 'tables_ingesting' user: 'client' host: '10.x.x.x' (Got an error reading communication packets)
+2019-10-28T17:28:10.332017Z 1308446 [Note] Aborted connection 1308446 to db: 'tables_ingesting' user: 'client' host: '10.x.x.x' (Got an error reading communication packets)
+2019-10-28T17:28:14.701596Z 1308447 [Note] Aborted connection 1308447 to db: 'tables_ingesting' user: 'client' host: '10.x.x.x' (Got an error reading communication packets)
+2019-10-28T17:28:19.259719Z 1308448 [Note] Aborted connection 1308448 to db: 'tables_ingesting' user: 'client' host: '10.x.x.x' (Got an error reading communication packets)
+2019-10-28T17:29:25.401275Z 1308449 [Note] Aborted connection 1308449 to db: 'tables_ingesting' user: 'client' host: '10.x.x.x' (Got an error reading communication packets)
+2019-10-28T17:29:25.413090Z 1308451 [Note] Aborted connection 1308451 to db: 'tables_ingesting' user: 'client' host: '10.x.x.x' (Got an error writing communication packets)
+2019-10-28T17:29:29.053986Z 1308494 [Note] Aborted connection 1308494 to db: 'tables_ingesting' user: 'client' host: '10.x.x.x' (Got an error reading communication packets)
+</code></pre>
+
+<p>So, something is going wrong with the MySQL instance in reading the packets that Django sends. The Oracle reference<sup><a href="#fn1-17043" id="fnr1-17043" title="see footnote" class="footnote">1</a></sup> tells us the following info:</p>
+
+<pre><code class="text">Error number: 1158; Symbol: ER_NET_READ_ERROR; SQLSTATE: 08S01
+Message: Got an error reading communication packets
+</code></pre>
+
+<p>However, making additional bad requests does not get anything logged to this file, so I am not sure that it is related.</p>
+
+<h2 id="packet-analysis">Packet Analysis</h2>
+
+<p>To analyze the packets sent to and from the Django server, we can leverage <code>tcpdump</code>:</p>
+
+<pre><code class="bash">sudo tcpdump -i any -w ~/captures/capture_%Y-%m-%d-%H-%M-%S.cap -G 30 -n -X -Z $USER &quot;port 8000&quot;
+</code></pre>
+
+<ul>
+<li>Any type of connection on port 8000, where the server runs</li>
+<li>Format for Wireshark</li>
+</ul>
+
+<p>We can download this file with:</p>
+
+<pre><code class="bash">scp -i cert.pem ec2-user@10.x.x.x:captures/capture_2019-10-29-13-30-15.cap .
+</code></pre>
+
+<p>This will download <code>captures/capture_2019-10-29-13-30-15.cap</code> to our local <code>.</code></p>
+
+<h2 id="wireshark-analysis">Wireshark Analysis</h2>
+
+<p>Opening up this file in Wireshark gave us some interesting information.</p>
+
+<h3 id="malformed-packets-galore">Malformed Packets Galore</h3>
+
+<p>There are a ton of packets that look fine:</p>
+
+<pre><code class="log">0000   31 00 00 33 07 30 39 37 35 39 33 33 0a 32 30 31   1..3.0975933.201
+0010   39 2d 30 33 2d 30 38 00 01 31 05 39 33 30 31 37   9-03-08..1.93017
+0020   06 33 35 33 2e 30 30 05 31 2e 30 30 30 07 33 36   .353.00.1.000.36
+0030   37 30 2e 38 31                                    70.81
+</code></pre>
+
+<p>Or, more easily understood in the Wireshark tree:</p>
+
+<pre><code class="log">MySQL Protocol
+    Packet Length: 49
+    Packet Number: 52
+    Catalog: 0975933
+    Database: 2019-03-08
+    Table:
+    Original table: 1
+    Name: 93306
+    Original name: 708
+    Charset number: Unknown (11825)
+    Length: 120598576
+    Type: Unknown (51)
+    Flags: 0x3133
+        .... .... .... ...1 = Not null: Set
+        .... .... .... ..1. = Primary key: Set
+        .... .... .... .0.. = Unique key: Not set
+        .... .... .... 0... = Multiple key: Not set
+        .... .... ...1 .... = Blob: Set
+        .... .... ..1. .... = Unsigned: Set
+        .... .... .0.. .... = Zero fill: Not set
+        .... .... 0... .... = Binary: Not set
+        .... ...1 .... .... = Enum: Set
+        .... ..0. .... .... = Auto increment: Not set
+        .... .0.. .... .... = Timestamp: Not set
+        .... 0... .... .... = Set: Not set
+    Decimals: 51
+</code></pre>
+
+<p>All of these packets were smaller (about <code>50</code> bytes each) than the <code>max_allowed_packet</code> of <code>4194304</code> bytes. However, these good packets were punctuated by several warnings in Wireshark for Malformed Packets, but no other information:</p>
+
+<pre><code class="log">[Malformed Packet: MySQL]
+    [Expert Info (Error/Malformed): Malformed Packet (Exception occurred)]
+        [Malformed Packet (Exception occurred)]
+        [Severity level: Error]
+        [Group: Malformed]
+</code></pre>
+
+<h3 id="mysql-end-of-file">MySQL End of File</h3>
+
+<p>The end of file packet in WireShark throws a <code>dissector is incomplete</code> error for broken queries as well:</p>
+
+<pre><code class="log">MySQL Protocol
+    Packet Length: 7
+    Packet Number: 53
+    Response Code: EOF Packet (0xfe)
+    EOF marker: 254
+    Warnings: 0
+    Server Status: 0x0022
+        .... .... .... ...0 = In transaction: Not set
+        .... .... .... ..1. = AUTO_COMMIT: Set
+        .... .... .... .0.. = Multi query / Unused: Not set
+        .... .... .... 0... = More results: Not set
+        .... .... ...0 .... = Bad index used: Not set
+        .... .... ..1. .... = No index used: Set
+        .... .... .0.. .... = Cursor exists: Not set
+        .... .... 0... .... = Last row sent: Not set
+        .... ...0 .... .... = Database dropped: Not set
+        .... ..0. .... .... = No backslash escapes: Not set
+        .... .0.. .... .... = Metadata changed: Not set
+        .... 0... .... .... = Query was slow: Not set
+        ...0 .... .... .... = PS Out Params: Not set
+        ..0. .... .... .... = In Trans Readonly: Not set
+        .0.. .... .... .... = Session state changed: Not set
+    Payload: 0000
+        [Expert Info (Warning/Undecoded): FIXME - dissector is incomplete]
+            [FIXME - dissector is incomplete]
+            [Severity level: Warning]
+            [Group: Undecoded]
+</code></pre>
+
+<p>However, this may be a problem with Wireshark not understanding the end of a MySQL TCP stream when the stream contains malformed packets.</p>
+
+<h1 id="django-bug-report">Django Bug Report</h1>
+
+<p>At this point, I did not know where to turn, so I filed a <a href="https://code.djangoproject.com/ticket/30911#no1">bug report</a> on the Django project. They closed it as an issue in a MySQL driver, database engine, or in database schema.</p>
+
+<h1 id="fourth-solution-attempt">Fourth Solution Attempt</h1>
+
+<p>The only recommendation I found online was to increase the value for <code>max_allowed_packet</code><sup><a href="#fn2-17043" id="fnr2-17043" title="see footnote" class="footnote">2</a></sup>. I did not do this at first because of the reasons listed under <a href="#Observed%20Behaviors">Observed Behaviors</a>. By default, my instance was set like:</p>
+
+<pre><code class="sql">mysql&gt; SHOW VARIABLES LIKE '%_packet';
++--------------------------+------------+
+| Variable_name            | Value      |
++--------------------------+------------+
+| max_allowed_packet       | 4194304    |
+| slave_max_allowed_packet | 1073741824 |
++--------------------------+------------+
+2 rows in set (0.09 sec)
+</code></pre>
+
+<p>Not understanding what units were used when setting the constant, I assumed <code>1024</code> would be 1Gb, so I set it to:</p>
+
+<pre><code class="sql">mysql&gt; SHOW VARIABLES LIKE '%_packet';
++--------------------------+------------+
+| Variable_name            | Value      |
++--------------------------+------------+
+| max_allowed_packet       | 1024       |
+| slave_max_allowed_packet | 1073741824 |
++--------------------------+------------+
+</code></pre>
+
+<p>This made all of my requests start working! However, other people using this database started reporting issues where they would get an error like <code>(1153, &quot;Got a packet larger than 'max_allowed_packet' bytes&quot;)</code>. This made me realize that I entered the units wrong, so I set the value to 50mb:</p>
+
+<pre><code class="sql">mysql&gt; SHOW VARIABLES LIKE '%_packet';
++--------------------------+------------+
+| Variable_name            | Value      |
++--------------------------+------------+
+| max_allowed_packet       | 49999872   |
+| slave_max_allowed_packet | 1073741824 |
++--------------------------+------------+
+2 rows in set (0.04 sec)
+</code></pre>
+
+<p>This also worked, which confused me. How is it possible that both large and small values, but not the default, will break my queries? to test this, I set <code>max_allowed_packet</code> back to the default of <code>4194304</code> and all of the queries still worked, but after 10-15 minutes would start failing again. Back to the drawing board.</p>
+
+<p>Unfortunately, we can't directly access the RDS nodes, so the root cause of this issue is impossible to diagnose. Sometimes, the advice &quot;turn it on and off again&quot; really does fix your problem, but this case it was not the solution.</p>
+
+<h1 id="fifth-solution-attempt">Fifth Solution Attempt</h1>
+
+<p>The docs for the recommended Django MySQL interface, <a href="https://pypi.org/project/mysqlclient/">mysqlclient</a>, tell us to run <code>sudo yum install python-devel mysql-devel</code> to ensure we have all of the dependencies. This line was in the CloudFormation file, so we assumed it was working as we expected. However, when we manually tried these install steps:</p>
+
+<pre><code class="bash">[ec2-user@ip-10-x-x-x ~]$ sudo yum install mysql-devel
+Loaded plugins: extras_suggestions, langpacks, priorities, update-motd
+amzn2-core                                          | 2.4 kB  00:00:00
+Package 1:mariadb-devel-5.5.64-1.amzn2.x86_64 already installed and latest version
+</code></pre>
+
+<p>Instead of getting <code>mysql-devel</code>, we actually get <code>mariadb-devel</code>, specifically an old version 2 full releases and a hard fork behind the database on RDS<sup><a href="#fn3-17043" id="fnr3-17043" title="see footnote" class="footnote">3</a></sup>. To fix this, we have to first uninstall the Amazon Linux repo's version of <code>maria-devel</code> and install MySQL's repository and then install the <code>mysql-devel</code> package from them:</p>
+
+<p>To uninstall the <code>maria-devel</code> package:</p>
+
+<pre><code class="bash">[ec2-user@ip-10-x-x-x ~]$ yum list installed mariadb\*
+Loaded plugins: extras_suggestions, langpacks, priorities, update-motd
+Installed Packages
+mariadb-devel.x86_64          1:5.5.64-1.amzn2             @amzn2-core
+mariadb-libs.x86_64           1:5.5.64-1.amzn2             @amzn2-core
+[ec2-user@ip-10-x-x-x ~]$ sudo yum remove mariadb-libs.x86_64 mariadb-devel.x86_64
+</code></pre>
+
+<p>Next, install the latest MySQL RPM package from the MySQL Yum repository <a href="https://dev.mysql.com/downloads/repo/yum/">download page</a>. First, we need to install the community certificate so that we can download from these repositories:</p>
+
+<pre><code class="bash">cd /etc/pki/rpm-gpg/
+sudo wget https://repo.mysql.com/RPM-GPG-KEY-mysql
+</code></pre>
+
+<p>Next, we can install the repository itself:</p>
+
+<pre><code class="bash">wget https://dev.mysql.com/get/mysql80-community-release-el6-3.noarch.rpm
+sudo yum localinstall mysql80-community-release-el6-3.noarch.rpm
+</code></pre>
+
+<p>We specifically need the REHL 6 repository; the REHL 7 and 8 repositories expect newer versions of system libraries and will result in errors like this:</p>
+
+<pre><code class="bash">--&gt; Finished Dependency Resolution
+Error: Package: mysql-community-libs-8.0.18-1.el8.x86_64 (mysql80-community)
+           Requires: libssl.so.1.1(OPENSSL_1_1_0)(64bit)
+Error: Package: mysql-community-libs-8.0.18-1.el8.x86_64 (mysql80-community)
+           Requires: libssl.so.1.1()(64bit)
+Error: Package: mysql-community-libs-8.0.18-1.el8.x86_64 (mysql80-community)
+           Requires: libssl.so.1.1(OPENSSL_1_1_1)(64bit)
+Error: Package: mysql-community-libs-8.0.18-1.el8.x86_64 (mysql80-community)
+           Requires: libc.so.6(GLIBC_2.28)(64bit)
+Error: Package: mysql-community-libs-8.0.18-1.el8.x86_64 (mysql80-community)
+           Requires: libcrypto.so.1.1()(64bit)
+Error: Package: mysql-community-libs-8.0.18-1.el8.x86_64 (mysql80-community)
+           Requires: libcrypto.so.1.1(OPENSSL_1_1_0)(64bit)
+...74 lines truncated...
+ You could try using --skip-broken to work around the problem
+ You could try running: rpm -Va --nofiles --nodigest
+</code></pre>
+
+<p>To verify that the repo was installed, we can run:</p>
+
+<pre><code class="bash">[ec2-user@ip-10-x-x-x ~]$ yum repolist enabled | grep &quot;mysql.*-community.*&quot;
+[ec2-user@ip-10-x-x-x ~]$ yum repolist enabled | grep &quot;mysql.*-community.*&quot;
+mysql-connectors-community/x86_64 MySQL Connectors Community               84+29
+mysql-tools-community/x86_64      MySQL Tools Community                       84
+mysql80-community/x86_64          MySQL 8.0 Community Server                 127
+[ec2-user@ip-10-x-x-x ~]$ yum repolist all | grep mysql
+mysql-cluster-7.5-community/x86_64   MySQL Cluster 7.5 Community disabled
+mysql-cluster-7.5-community-source   MySQL Cluster 7.5 Community disabled
+mysql-cluster-7.6-community/x86_64   MySQL Cluster 7.6 Community disabled
+mysql-cluster-7.6-community-source   MySQL Cluster 7.6 Community disabled
+mysql-cluster-8.0-community/x86_64   MySQL Cluster 8.0 Community disabled
+mysql-cluster-8.0-community-source   MySQL Cluster 8.0 Community disabled
+mysql-connectors-community/x86_64    MySQL Connectors Community  enabled:  84+29
+mysql-connectors-community-source    MySQL Connectors Community  disabled
+mysql-tools-community/x86_64         MySQL Tools Community       enabled:     84
+mysql-tools-community-source         MySQL Tools Community - Sou disabled
+mysql-tools-preview/x86_64           MySQL Tools Preview         disabled
+mysql-tools-preview-source           MySQL Tools Preview - Sourc disabled
+mysql55-community/x86_64             MySQL 5.5 Community Server  disabled
+mysql55-community-source             MySQL 5.5 Community Server  disabled
+mysql56-community/x86_64             MySQL 5.6 Community Server  disabled
+mysql56-community-source             MySQL 5.6 Community Server  disabled
+mysql57-community/x86_64             MySQL 5.7 Community Server  disabled
+mysql57-community-source             MySQL 5.7 Community Server  disabled
+mysql80-community/x86_64             MySQL 8.0 Community Server  enabled:    127
+mysql80-community-source             MySQL 8.0 Community Server  disabled
+</code></pre>
+
+<p>This defaults to only activating the <code>8.x</code> version of MySQL, which is not the match for our database version. We need to use the <code>5.7.x</code> version, so we have to edit <code>/etc/yum.repos.d/mysql-community.repo</code> to say:</p>
+
+<pre><code class="bash"># Enable to use MySQL 5.7
+[mysql57-community]
+name=MySQL 5.7 Community Server
+baseurl=http://repo.mysql.com/yum/mysql-5.7-community/el/6/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-mysql
+
+[mysql80-community]
+name=MySQL 8.0 Community Server
+baseurl=http://repo.mysql.com/yum/mysql-8.0-community/el/6/$basearch/
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-mysql
+</code></pre>
+
+<p>Once we verified the proper repositories are enabled worked, we can run <code>sudo yum install mysql-devel</code> to get the proper package. I ran into issues downloading this:</p>
+
+<pre><code class="bash">... (truncated)
+mysql-community-devel-5.7.28-1 FAILED
+http://repo.mysql.com/yum/mysql-5.7-community/el/6/x86_64/mysql-community-devel-5.7.28-1.el6.x86_64.rpm: [Errno 12] Timeout on http://repo.mysql.com/yum/mysql-5.7-community/el/6/x86_64/mysql-community-devel-5.7.28-1.el6.x86_64.rpm: (28, 'Operation too slow. Less than 1000 bytes/sec transferred the last 5 seconds')
+Trying other mirror.
+mysql-community-devel-5.7.28-1 FAILED
+http://repo.mysql.com/yum/mysql-5.7-community/el/6/x86_64/mysql-community-devel-5.7.28-1.el6.x86_64.rpm: [Errno 12] Timeout on http://repo.mysql.com/yum/mysql-5.7-community/el/6/x86_64/mysql-community-devel-5.7.28-1.el6.x86_64.rpm: (28, 'Operation too slow. Less than 1000 bytes/sec transferred the last 5 seconds')
+Trying other mirror.
+
+
+Error downloading packages:
+  mysql-community-devel-5.7.28-1.el6.x86_64: [Errno 256] No more mirrors to try.
+</code></pre>
+
+<p>To solve this, I set <code>timeout = 60</code> and <code>minrate=1</code> in <code>/etc/yum.conf</code> which solved the issue.</p>
+
+<p>Once MysQL 5.7 was installed, we needed to uninstall and reinstall the <code>pip</code>'s instance of <code>mysqlclient</code> because it expects to see <code>maria-devel</code> and not our newer <code>mysql-devel</code>.</p>
+
+<p>This seemed promising, as now our database version and driver version are aligned, but when we try and start Django we get this traceback:</p>
+
+<pre><code class="bash">Traceback (most recent call last):
+  File &quot;/usr/local/lib/python3.7/site-packages/django/db/backends/utils.py&quot;, line 83, in _execute
+    return self.cursor.execute(sql)
+  File &quot;/usr/local/lib/python3.7/site-packages/django/db/backends/mysql/base.py&quot;, line 71, in execute
+    return self.cursor.execute(query, args)
+  File &quot;/usr/local/lib64/python3.7/site-packages/MySQLdb/cursors.py&quot;, line 209, in execute
+    res = self._query(query)
+  File &quot;/usr/local/lib64/python3.7/site-packages/MySQLdb/cursors.py&quot;, line 315, in _query
+    db.query(q)
+  File &quot;/usr/local/lib64/python3.7/site-packages/MySQLdb/connections.py&quot;, line 226, in query
+    _mysql.connection.query(self, query)
+MySQLdb._exceptions.OperationalError: (2013, 'Lost connection to MySQL server during query')
+</code></pre>
+
+<p>Other than that, though, the server would start fine and all of our requests went through okay, so why was this crashing so hard? I reverted back to the default versions by spinning up a new instance. After redeploying, I noticed a new log message.</p>
+
+<h1 id="sixth-solution-attempt">Sixth Solution Attempt</h1>
+
+<p>Once all of the modules were installed, Django would start with the following warning log:</p>
+
+<pre><code class="log">MySQL Strict Mode is not set for database connection 'default'
+</code></pre>
+
+<p>The server would run fine, but this warning did not happen on local. To address it, we can add an <code>init_command</code> to the <code>default</code> database configuration</p>
+
+<pre><code class="python">    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'model_data',
+        'USER': get_env_variable('DBUSER'),
+        'PASSWORD': get_env_variable('DBPW'),
+        'HOST': 'dev.sql.internal.net',
+        'OPTIONS': {'init_command': &quot;SET sql_mode='STRICT_TRANS_TABLES'&quot;}
+    }
+</code></pre>
+
+<h2 id="solution">Solution</h2>
+
+<p>The above change to the <code>init_command</code> solved this. <code>SSH</code>ing in and removing that line will instantly kill the server connection and start logging the malformed packet error, and putting it back will make the queries start working again.</p>
+
+<h1 id="other-observations">Other Observations</h1>
+
+<p>Django does not properly format the query when printing <code>QuerySet.query()</code>, rather it string formats the entire thing, which removes all of the quotes. The query under <a href="#troubleshooting">troubleshooting</a> looks like this when printed <sup><a href="#fn4-17043" id="fnr4-17043" title="see footnote" class="footnote">4</a></sup></p>
+
+<pre><code class="sql">SELECT `tables_ingesting`.`prov_id`,
+       `tables_ingesting`.`beg_date`,
+       `tables_ingesting`.`method`,
+       `tables_ingesting`.`category`,
+       `tables_ingesting`.`code`,
+       `tables_ingesting`.`allowed`,
+       `tables_ingesting`.`count`,
+       `tables_ingesting`.`charge`
+FROM   `tables_ingesting`
+WHERE  ((
+              `tables_ingesting`.`beg_date` BETWEEN 2018-10-01 AND 2018-12-31
+       OR     `tables_ingesting`.`beg_date` BETWEEN 2019-01-01 AND 2019-03-31)
+       AND    `tables_ingesting`.`medcr_ind` = N
+       AND    `tables_ingesting`.`prov_id` IN (0975933)
+       AND    NOT ((
+                            `tables_ingesting`.`category` IS NULL
+                     OR     `tables_ingesting`.`code` IS NULL))
+       AND    NOT ((
+                            `tables_ingesting`.`category` =
+                     OR     `tables_ingesting`.`code` =
+                     OR     `tables_ingesting`.`category` = &quot;&quot;
+                     OR     `tables_ingesting`.`code` = &quot;&quot;))
+        );
+</code></pre>
+
+<p>However, this is due to the way the strings are <a href="https://github.com/django/django/blob/master/django/db/models/sql/query.py#L118">formatted</a> when calling <code>.query()</code> and not what is passed to the SQL server. If this was the case, all queries with quoted parameters would fail with <code>ERROR 1064 (42000): You have an error in your SQL syntax</code>.</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-17043">
+<p><a href="https://docs.oracle.com/cd/E17952_01/mysql-5.0-en/error-messages-server.html#error_er_net_read_error">5.0</a>, <a href="https://dev.mysql.com/doc/refman/5.7/en/server-error-reference.html#error_er_net_read_error">5.7</a>, <a href="https://docs.oracle.com/cd/E17952_01/mysql-8.0-en/server-error-reference.html#error_er_net_read_error">8.x</a> <a href="#fnr1-17043" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-17043">
+<p>The protocol limit for <code>max_allowed_packet</code> is 1 GB. Allowed Values: 1024-1073741824 <a href="#fnr2-17043" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-17043">
+<p>A full 5 years of releases between the two versions, actually. <a href="#fnr3-17043" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn4-17043">
+<p>Formatted to be human readable. <a href="#fnr4-17043" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" type="text/css" href="/css/highlight.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">April 26, 2020</time>
+<title>Synchronous Code in Asynchronous Contexts</title>
+<h1 class="article_title">Synchronous Code in Asynchronous Contexts</h1>
+
+<div class="TOC">
+<ul>
+<li><a href="#the-dependency-problem">The Dependency Problem</a>
+
+<ul>
+<li><a href="#sample-function">Sample Function</a>
+
+<ul>
+<li><a href="#why-does-this-happen">Why does this Happen</a></li>
+<li><a href="#typeerror-on-await">TypeError on </a></li>
+<li><a href="#wrapping-synchronous-code-in-an-event-loop">Wrapping Synchronous Code in an Event Loop</a></li>
+</ul></li>
+<li><a href="#a-more-complex-example">A More Complex Example</a>
+
+<ul>
+<li><a href="#the-problem">The Problem</a></li>
+<li><a href="#building-a-partial">Building a Partial</a></li>
+<li><a href="#bringing-it-all-together">Bringing it all Together</a></li>
+</ul></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul></li>
+</ul>
+</div>
+
+<h1 id="the-dependency-problem">The Dependency Problem</h1>
+
+<p>In Python, asynchronous code can be as simple as writing <code>async def get_result()</code> and later <code>await get_result()</code>. However, if <code>get_result</code> interacts with third party library code that cannot be <code>await</code>ed, we run into problems where asynchronous-looking code runs synchronously.</p>
+
+<h2 id="sample-function">Sample Function</h2>
+
+<p>Several prominent HTTP libraries in the Python ecosystem do not support asynchronous programming natively. Consider the following code:</p>
+
+<pre><code class="python">async def get_response_code(url: str) -&gt; int:
+    return requests.get(url).status_code
+</code></pre>
+
+<p>No matter how hard we try, the requests will all be executed in series:</p>
+
+<pre><code class="python">async def run_concurrent() -&gt; None:
+    awaitables: List[coroutine] = []
+    for url in list_of_url_strings:
+        awaitables.append(get_response_code(url))
+    return await asyncio.gather(*awaitables)
+</code></pre>
+
+<h3 id="why-does-this-happen">Why Does This Happen</h3>
+
+<p>Even though we are <code>await</code>ing the result of <code>get_response_code</code>, nothing in that function tells Python when to actually wait for IO, so the code always waits for the current coroutine to finish before starting the next one. We can verify this with <code>asyncio.run()</code>'s <code>debug</code> parameter:</p>
+
+<pre><code class="python">&gt;&gt;&gt; asyncio.run(run_concurrent(), debug=True)
+Executing &lt;Task finished name='Task-58' coro=&lt;get_response_code() done, defined at &lt;stdin&gt;:1&gt; result=200 created at ~/.pyenv/versions/3.8.2/lib/python3.8/asyncio/tasks.py:806&gt; took 0.699 seconds
+Executing &lt;Task finished name='Task-59' coro=&lt;get_response_code() done, defined at &lt;stdin&gt;:1&gt; result=200 created at ~/.pyenv/versions/3.8.2/lib/python3.8/asyncio/tasks.py:806&gt; took 0.637 seconds
+Executing &lt;Task finished name='Task-60' coro=&lt;get_response_code() done, defined at &lt;stdin&gt;:1&gt; result=200 created at ~/.pyenv/versions/3.8.2/lib/python3.8/asyncio/tasks.py:806&gt; took 0.687 seconds
+[200, 200, 200]
+</code></pre>
+
+<h3 id="typeerror-on-await">TypeError on <code>await</code></h3>
+
+<p>If we try and solve this by <code>await</code>ing the call to <code>requests.get()</code> like so:</p>
+
+<pre><code class="python">async def get_response_code(url: str) -&gt; int:
+    result = await requests.get(url).status_code
+    return result
+</code></pre>
+
+<p>Python will raise the following error:</p>
+
+<pre><code class="python">&gt;&gt;&gt; asyncio.run(get_response_code('https://google.com'))
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;~/.pyenv/versions/3.8.2/lib/python3.8/asyncio/runners.py&quot;, line 43, in run
+    return loop.run_until_complete(main)
+  File &quot;~/.pyenv/versions/3.8.2/lib/python3.8/asyncio/base_events.py&quot;, line 616, in run_until_complete
+    return future.result()
+  File &quot;&lt;stdin&gt;&quot;, line 2, in get_response_code
+TypeError: object int can't be used in 'await' expression
+</code></pre>
+
+<p>Because <code>requests.get()</code> does not return a future, we cannot await its result.</p>
+
+<h3 id="wrapping-synchronous-code-in-an-event-loop">Wrapping Synchronous Code in an Event Loop</h3>
+
+<p>Given that knowledge, we can instead nest the synchronous request inside of its own event loop, then await the result of that event loop. The standard library provides a function called <a href="https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor"><code>run_in_executor</code></a> which we can leverage to wrap this:</p>
+
+<pre><code class="python">async def get_response_code(url: str) -&gt; int:
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, requests.get, url)
+    return result.status_code
+</code></pre>
+
+<p>Now, when sample code will run concurrently, as verified by <code>asyncio.run()</code>'s <code>debug</code> parameter:</p>
+
+<pre><code class="python">&gt;&gt;&gt; asyncio.run(run_concurrent(), debug=True)
+[200, 200, 200]
+</code></pre>
+
+<h2 id="a-more-complex-example">A More Complex Example</h2>
+
+<p>If we need to pass more complex data to the synchronous code, we can leverage <a href="https://docs.python.org/3.8/library/functools.html#functools.partial"><code>functools.partial</code></a>, which allows us to generate a callable for a function that has some or all of the parameters pre-filled.</p>
+
+<h3 id="the-problem">The Problem</h3>
+
+<p>In Amazon’s <code>boto3</code> docs, all of the parameters for a Lambda client’s <code>invoke</code> method are named:</p>
+
+<pre><code class="python">boto3.client('lambda').invoke(
+    FunctionName='lambda-function-name',
+    InvocationType='RequestResponse',
+    Payload={...},
+    Qualifier='$LATEST'
+)
+</code></pre>
+
+<p>However, this form does not work with <code>run_in_executor</code> because the arguments are only passed as positional parameters, not named parameters. To get around this, we need to create a callable that already has these data filled.</p>
+
+<h3 id="building-a-partial">Building a Partial</h3>
+
+<p>A small partial can look like this:</p>
+
+<pre><code class="python">&gt;&gt;&gt; from functools import partial
+&gt;&gt;&gt; def multiply(a: int, b: int) -&gt; int:
+...     return a * b
+
+&gt;&gt;&gt; double = partial(multiply, 2)
+&gt;&gt;&gt; double(6)  # Same as multiply(2, 6)
+12
+</code></pre>
+
+<p>Thus, we can build a partial for <code>invoke</code> like so:</p>
+
+<pre><code class="python">callable = functools.partial(
+    boto3.client('lambda').invoke,
+    FunctionName='lambda-function-name',
+    InvocationType='RequestResponse',
+    Payload=payload,
+    Qualifier='$LATEST'
+)
+</code></pre>
+
+<p>Now, <code>callable({})</code> will execute <code>invoke</code> with all of the provided named parameters, passing <code>{}</code> as <code>payload</code>.</p>
+
+<h3 id="bringing-it-all-together">Bringing it all Together</h3>
+
+<p>We can just drop the entire <code>partial</code> block inside of the callable positional parameter in <code>run_in_executor</code> to bring these two methods together:</p>
+
+<pre><code class="python">async def get_lambda_response(payload: dict) -&gt; dict:
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None, functools.partial(
+            boto3.client('lambda').invoke,
+            FunctionName='lambda-function-name',
+            InvocationType='RequestResponse',
+            Payload=payload,
+            Qualifier='$LATEST'
+        )
+    )
+    ...
+    return result
+</code></pre>
+
+<p>This allows us to call the <code>invoke</code> method of a lambda client using its named parameters, which is not possible in the default implementation of <code>run_in_executor</code>.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Using a combination of these two methods, we can efficiently leverage popular libraries' synchronous code in asynchronous contexts.</p>
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

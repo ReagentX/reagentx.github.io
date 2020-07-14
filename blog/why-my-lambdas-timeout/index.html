@@ -1,0 +1,111 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" type="text/css" href="/css/highlight.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">May 23, 2020</time>
+<title>Why My Lambdas Unexpectedly Timed Out</title>
+<h1 class="article_title">Why My Lambdas Unexpectedly Timed Out</h1>
+
+<div class="TOC">
+
+<ul>
+<li><a href="#issue-discovery">Issue Discovery</a>
+
+<ul>
+<li><a href="#debugging-attempts">Debugging Attempts</a>
+
+<ul>
+<li><a href="#adjusting-lambda-timeouts">Adjusting Lambda Timeouts</a></li>
+<li><a href="#traffic-analysis">Traffic Analysis</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+
+<h1 id="issue-discovery">Issue Discovery</h1>
+
+<p>On occasion, triggering some AWS Lambda Functions inside of our VPC would result in unexpected timed out connections, specifically <code>ConnectionClosedError</code>. The proximate cause appeared to be the default timeout configuration in the <code>boto3</code> library, but the real problem was lower level than that.</p>
+
+<h2 id="debugging-attempts">Debugging Attempts</h2>
+
+<p>The Lambdas log the specific parameters that cause failures. The Lambda functions make database queries, so on some occasions, they run for a long time. The Lambda timeouts are set to <code>300</code> seconds, but we receive timeout errors after only <code>120</code> seconds.</p>
+
+<h3 id="adjusting-lambda-timeouts">Adjusting Lambda Timeouts</h3>
+
+<p>The <a href="https://github.com/boto/botocore/blob/64827efe118f44b42e8b75e9c45052cd5e77d5aa/botocore/config.py#L158">default</a> configuration in botocore for HTTP connections is <a href="https://github.com/boto/botocore/blob/64827efe118f44b42e8b75e9c45052cd5e77d5aa/botocore/endpoint.py#L34"><code>60</code> seconds</a>. Both <code>read_timeout</code> and <code>connect_timeout</code> were overwritten to <code>300</code> already:</p>
+
+<pre><code class="python">LAMBDA_CLIENT = boto3.client(
+    'lambda', config=botocore.config.Config(retries={'max_attempts': 0},
+                                            connect_timeout=300,
+                                            read_timeout=300))
+</code></pre>
+
+<p>This should only timeout after <code>5</code> minutes and never retry a request. As an abundance of caution, we reduced these timeouts to <code>5</code> seconds:</p>
+
+<pre><code class="python">LAMBDA_CLIENT = boto3.client(
+    'lambda', config=botocore.config.Config(retries={'max_attempts': 0},
+                                            connect_timeout=5,
+                                            read_timeout=5))
+</code></pre>
+
+<p>This crashes when the Lambda takes longer than five seconds to return a value, but it was a new crash: <code>ReadTimeoutError</code> versus the original <code>ConnectionClosedError</code><sup><a href="#fn1-9474" id="fnr1-9474" title="see footnote" class="footnote">1</a></sup>.</p>
+
+<p>Since the new error makes sense, the Lambda timeout is not the reason for our connection problem.</p>
+
+<h3 id="traffic-analysis">Traffic Analysis</h3>
+
+<p>According to the AWS Lambda <a href="https://docs.aws.amazon.com/lambda/latest/dg/invocation-sync.html">Invoke</a> docs:</p>
+
+<blockquote>
+<p>For functions with a long timeout, your client might be disconnected during synchronous invocation while it waits for a response. Configure your HTTP client, SDK, firewall, proxy, or operating system to allow for long connections with timeout or <code>keep-alive</code> settings. </p>
+</blockquote>
+
+<p>Our EC2 fleet that invokes the Lambda Functions are inside of a VPC, and so are the Lambdas themselves. Since there is no VPC Endpoint support for Lambda <sup><a href="#fn2-9474" id="fnr2-9474" title="see footnote" class="footnote">2</a></sup>, these requests go through the public internet. For us, that means passing through our datacenter, which has a limited <code>keep-alive</code> configuration.</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-9474">
+<p>The last two exceptions in <a href="https://github.com/boto/botocore/blob/77e37afa09f24d46fbdc39950d8c391813997227/botocore/httpsession.py#L289">this</a> exception handler <a href="#fnr1-9474" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-9474">
+<p>It is omitted from the list on the <a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-endpoints.html">docs page</a>. <a href="#fnr2-9474" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

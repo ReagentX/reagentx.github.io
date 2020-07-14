@@ -3,8 +3,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" type="text/css" href="/css/highlight.css">
 <link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
 <script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
 <script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
 <script type="text/javascript">
     $.bigfoot();
@@ -70,7 +73,7 @@
 
 <p>In solving data analytics problems, occasionally we must bin data into intervals or categories based on some arbitrary stratification. A common example outside of the world of computer science is letter grades, a concept that can be abstracted<sup><a href="#fn1-10891" id="fnr1-10891" title="see footnote" class="footnote">1</a></sup> to:</p>
 
-<pre><code>def grade(score):
+<pre><code class="python">def grade(score):
     grades = ['F', 'D', 'C', 'B', 'A']
     if score &gt;= 100:
         return 'A'
@@ -81,18 +84,18 @@
 
 <p>Thus, for:</p>
 
-<pre><code>scores = [88, 72, 61, 39, 97]
+<pre><code class="python">scores = [88, 72, 61, 39, 97]
 results = [grade(score) for score in scores]
 </code></pre>
 
 <p>We get:</p>
 
-<pre><code>['B', 'C', 'D', 'F', 'A']
+<pre><code class="python">['B', 'C', 'D', 'F', 'A']
 </code></pre>
 
 <p>However, if any of our <code>score</code> values<sup><a href="#fn2-10891" id="fnr2-10891" title="see footnote" class="footnote">2</a></sup> are not integers we will encounter a <code>TypeError</code>:</p>
 
-<pre><code>&gt;&gt;&gt; grade(61.2)
+<pre><code class="python">&gt;&gt;&gt; grade(61.2)
 Traceback (most recent call last):
   File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
   File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;lambda&gt;
@@ -101,7 +104,7 @@ TypeError: list indices must be integers or slices, not float
 
 <p>This is caused by the following type coercion, as lists cannot be indexed by floats:</p>
 
-<pre><code>&gt;&gt;&gt; (61.2 - 50) // 2
+<pre><code class="python">&gt;&gt;&gt; (61.2 - 50) // 2
 1.0
 </code></pre>
 
@@ -109,7 +112,7 @@ TypeError: list indices must be integers or slices, not float
 
 <p>Of course, we can cast to an int:</p>
 
-<pre><code>def grade(score):
+<pre><code class="python">def grade(score):
     grades = ['F', 'D', 'C', 'B', 'A']
     if score &gt; 99:
         return 'A'
@@ -120,7 +123,7 @@ TypeError: list indices must be integers or slices, not float
 
 <p>However, for large datasets this is not an efficient operation:</p>
 
-<pre><code>chris% python -m timeit 'int(102.3 // 2)'
+<pre><code class="bash">chris% python -m timeit 'int(102.3 // 2)'
 5000000 loops, best of 5: 99.6 nsec per loop
 chris% python -m timeit '102.3 // 2'     
 50000000 loops, best of 5: 7.05 nsec per loop
@@ -128,7 +131,7 @@ chris% python -m timeit '102.3 // 2'
 
 <p>In my real-world example, the <code>score</code> equivalent is always a float, so we can map the float integer values to their respective categories<sup><a href="#fn3-10891" id="fnr3-10891" title="see footnote" class="footnote">3</a></sup>, similar to:</p>
 
-<pre><code>&gt;&gt;&gt; grades
+<pre><code class="python">&gt;&gt;&gt; grades
 {0.0: 'F', 1.0: 'D', ...}
 &gt;&gt;&gt; grades[0]
 'F'
@@ -174,7 +177,7 @@ chris% python -m timeit '102.3 // 2'
 
 <p>The float <code>divmod</code> work occurs in <code>float_floor_div</code>, which comes from the <a href="https://github.com/python/cpython/blob/279f44678c8b84a183f9eeb85e0b086228154497/Objects/floatobject.c#L673">cpython source</a>. All this function does is call <code>float_divmod</code> and dereferences the quotient:</p>
 
-<pre><code>static PyObject *
+<pre><code class="c">static PyObject *
 float_floor_div(PyObject *v, PyObject *w)
 {
     PyObject *t, *r;
@@ -196,7 +199,7 @@ float_floor_div(PyObject *v, PyObject *w)
 
 <p>The source for <code>float_divmod</code> lives <a href="https://github.com/python/cpython/blob/279f44678c8b84a183f9eeb85e0b086228154497/Objects/floatobject.c#L626">here</a>. The first step of this function handles the type cast:</p>
 
-<pre><code>float_divmod(PyObject *v, PyObject *w)
+<pre><code class="c">float_divmod(PyObject *v, PyObject *w)
 {
     double vx, wx;
     double div, mod, floordiv;
@@ -211,7 +214,7 @@ float_floor_div(PyObject *v, PyObject *w)
 
 <p>If the divisor is zero, we raise an error:</p>
 
-<pre><code>...
+<pre><code class="c">...
 if (wx == 0.0) {
     PyErr_SetString(PyExc_ZeroDivisionError, &quot;float divmod()&quot;);
     return NULL;
@@ -223,7 +226,7 @@ if (wx == 0.0) {
 
 <p>Before we can do any work, we must calculate the quotient and dividend:</p>
 
-<pre><code>mod = fmod(vx, wx);
+<pre><code class="python">mod = fmod(vx, wx);
 div = (vx - mod) / wx;
 </code></pre>
 
@@ -233,7 +236,7 @@ div = (vx - mod) / wx;
 
 <p>Once we have these values, we check to ensure the sign is correct.</p>
 
-<pre><code>...
+<pre><code class="c">...
 if (mod) {
     if ((wx &lt; 0) != (mod &lt; 0)) {
         mod += wx;
@@ -251,7 +254,7 @@ if (mod) {
 
 <p>If the quotient is not zero, we call the <code>floor</code> function:</p>
 
-<pre><code>...
+<pre><code class="c">...
 if (div) {
     floordiv = floor(div);
     if (div - floordiv &gt; 0.5)
@@ -323,7 +326,7 @@ if (div) {
 
 <p>In a post-Python 2 era, these concerns do not hold the same weight. This is an example of some technical debt that Python has accrued, as other parts of Python do not behave this way:</p>
 
-<pre><code>&gt;&gt;&gt; type(timedelta(2.2) // timedelta(3))
+<pre><code class="python">&gt;&gt;&gt; type(timedelta(2.2) // timedelta(3))
 &lt;class 'int'&gt;
 &gt;&gt;&gt; type(Fraction(2.3) // Fraction(1))
 &lt;class 'int'&gt;
@@ -343,7 +346,7 @@ chris% python -m timeit '102.3 // 2'
 50000000 loops, best of 5: 7.05 nsec per loop
 </code></pre>
 
-<p>This performance hit does not stem from the float conversion itself <sup><a href="#fn8-10891" id="fnr8-10891" title="see footnote" class="footnote">8</a></sup> but rather from the fact that integer and float values are stored in <a href="https://en.wikipedia.org/wiki/Processor_register#Types_of_registers">different registers</a>: the CPU must first store the float from the FPU register in memory, then read that memory address into the int register. This is a classic example of a <a href="https://en.wikipedia.org/wiki/Load-Hit-Store">load-hit-store</a> stall.</p>
+<p>This performance hit does not stem from the float <a href="https://github.com/python/cpython/blob/6314abcc08f5d0f3d3a915dc9455ea223fa65517/Objects/longobject.c#L434">conversion</a> itself <sup><a href="#fn8-10891" id="fnr8-10891" title="see footnote" class="footnote">8</a></sup> but rather from the fact that integer and float values are stored in <a href="https://en.wikipedia.org/wiki/Processor_register#Types_of_registers">different registers</a>: the CPU must first store the float from the FPU register in memory, then read that memory address into the int register. This is a classic example of a <a href="https://en.wikipedia.org/wiki/Load-Hit-Store">load-hit-store</a> stall.</p>
 
 <h3 id="polymorphism">Polymorphism</h3>
 
