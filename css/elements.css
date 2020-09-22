@@ -78,7 +78,7 @@ div.consoleWindow {
 }
 
 div.consoleWindow0 {
-    --aug-border-all: 8px;
+    --aug-border-all: 5px;
 }
 
 @media (pointer:coarse) {
