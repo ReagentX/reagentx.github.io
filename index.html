@@ -16,25 +16,25 @@
       <div class="buttons">
         <div class="button active"
              id="terminal"
-             augmented-ui="tl-clip-x r-clip-y bl-clip-y exe"
+             data-augmented-ui="tl-2-clip-x r-clip-y both"
              onclick="activate('terminal');">
-          <p>Terminal</p>
+          <p>Shell</p>
         </div>
         <div class="button"
              id="content"
-             augmented-ui="tl-clip-x tr-clip-y br-clip-x bl-clip-y exe"
+             data-augmented-ui="bl-2-clip-x tl-2-clip-x br-2-clip-x tr-2-clip-x both"
              onclick="activate('content');">
           <p>About</p>
         </div>
         <div class="button"
              id="blog"
-             augmented-ui="l-clip-y br-clip-x tr-clip-y exe"
+             data-augmented-ui="l-clip-y br-2-clip-x both"
              onclick="activate('blog');">
           <p>Blog</p>
         </div>
       </div>
       <div class="consoleWindow consoleWindow0"
-           augmented-ui="tl-clip-x r-clip-y bl-clip-y br-clip exe"
+           data-augmented-ui="tl-2-clip-x r-clip-y bl-clip-y br-clip both"
            style="--aug-r-height: 50%;">
         <div id="console"></div>
       </div>

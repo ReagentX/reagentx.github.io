@@ -38,11 +38,11 @@ div.button {
     width: 50%;
 	margin-top: 1vh;
 	margin-bottom: 1vh;
-    --aug-border: 5px;
-    --aug-inset: 5px;
+    --aug-border-all: 5px;
+    --aug-inlay-all: 5px;
     padding: 10px; /* mind the gap */
     --aug-border-bg: rgba(205, 5, 120, 0.75);
-    --aug-inset-bg: #21003e;
+    --aug-inlay-bg: #21003e;
     text-align: center;
     color: #dbdbdb;
     /* position: relative; */
@@ -71,15 +71,15 @@ div.consoleWindow {
     max-width: 750px;
     margin-left: auto;
     margin-right: auto;
-    --aug-border: 5px;
-    --aug-inset: 5px;
+    --aug-border-all: 5px;
+    --aug-inlay-all: 5px;
     padding: 10px; /* mind the gap */
     --aug-border-bg: rgba(205, 5, 120, 0.75);
-    --aug-inset-bg: #21003e;
+    --aug-inlay-bg: #00000000;
 }
 
 div.consoleWindow0 {
-    --aug-border: 8px;
+    --aug-border-all: 8px;
 }
 
 @media (pointer:coarse) {
