@@ -1,4 +1,4 @@
-const Typer = {
+const Shell = {
     text: null,
     accessCountimer: null,
     index: 0,
@@ -9,9 +9,9 @@ const Typer = {
     init()
     {
         // Typer.accessCountimer = setInterval(() => { Typer.updLstChr(); }, 500);
-        $.get(Typer.file, (data) => {
-            Typer.text = data;
-            Typer.text = Typer.text.slice(0, Typer.text.length - 1);
+        $.get(Shell.file, (data) => {
+            Shell.text = data;
+            Shell.text = Shell.text.slice(0, Shell.text.length - 1);
         });
     },
 
@@ -34,26 +34,26 @@ const Typer = {
 
     addText(key)
     {
-        if (Typer.text)
+        if (Shell.text)
         {
-            const cont = Typer.content();
+            const cont = Shell.content();
             if (cont.substring(cont.length - 1, cont.length) === '|')
             {
                 $('#console').html($('#console').html().substring(0, cont.length - 1));
             }
-            if (key.keyCode !== 8) { Typer.index += Typer.speed; }
-            else if (Typer.index > 0) { Typer.index -= Typer.speed; }
+            if (key.keyCode !== 8) { Shell.index += Shell.speed; }
+            else if (Shell.index > 0) { Shell.index -= Shell.speed; }
 
-            let current_char = Typer.text.substring(Typer.index - 1, Typer.index);
+            let current_char = Shell.text.substring(Shell.index - 1, Shell.index);
             if (current_char === '%')
             {
                 do
                 {
-                    Typer.index += 1;
-                    current_char = Typer.text.substring(Typer.index - 1, Typer.index);
+                    Shell.index += 1;
+                    current_char = Shell.text.substring(Shell.index - 1, Shell.index);
                 } while (current_char !== '%');
             }
-            let text = Typer.text.substring(0, Typer.index);
+            let text = Shell.text.substring(0, Shell.index);
             text = text.replace(/%/g, '');
             const rtn = new RegExp('\n', 'g');
             $('#console').html(text.replace(rtn, '<br/>'));
@@ -73,17 +73,16 @@ const Typer = {
     },
 };
 
-Typer.speed = 1; // Number of haracters to type at once
-Typer.file = 'content/chris.html';
-Typer.init();
-// Typer.addSection()
+Shell.speed = 1; // Number of haracters to type at once
+Shell.file = 'content/chris.html';
+Shell.init();
 
 const timer = setInterval('t();', 30);
 function t()
 {
-    Typer.addText({ keyCode: 123748 });
+    Shell.addText({ keyCode: 123748 });
 
-    if (Typer.index >= Typer.text.length)
+    if (Shell.index >= Shell.text.length)
     {
         clearInterval(timer);
     }
@@ -111,7 +110,8 @@ const activate = (id) =>
         $.getJSON(content[id], function(posts) 
         {
             html = '<div><h1><span id="a">Blog Posts</span></h1>'
-            posts.forEach(post => {
+            posts.forEach(post =>
+            {
                 html += `<p>${post.date} <a href="${post.slug}">${post.title}</a></p>`
             });
             html += '</div>'
@@ -120,7 +120,8 @@ const activate = (id) =>
     } 
     else 
     {
-        $.get(content[id], (data) => {
+        $.get(content[id], (data) =>
+        {
             $('#console').html(data)
         });
     }
