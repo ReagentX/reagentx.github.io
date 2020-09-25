@@ -36,7 +36,7 @@ div.button {
     display: inline-block;
     vertical-align: top;
     width: 50%;
-    margin: 1vh 0vh 1vh 0vh;
+    margin: 1vh 0.5vh 1vh .5vh;
     --aug-border-all: 5px;
     --aug-inlay-all: 5px;
     padding: 10px; /* mind the gap */
