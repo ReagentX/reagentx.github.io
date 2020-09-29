@@ -10,7 +10,7 @@ html {
     font-size: 2rem;
     font-weight: 100;
     background: white;
-    color: #21003e;
+    color: #19002e;
     font-family: 'SFNSTextLight', Helvetica, Arial, sans-serif;
     max-width: 750px;
     margin-left: auto;
@@ -79,8 +79,8 @@ html {
     background: white;
     line-height: 2.2rem;
     font-size: 1.6rem;
-    color: #21003e;
-    border: 0.3rem solid #21003e;
+    color: #19002e;
+    border: 0.3rem solid #19002e;
     padding: 0.4rem 1rem;
     cursor: pointer;
   }
@@ -91,7 +91,7 @@ html {
   input[type="reset"].filled,
   input[type="submit"].filled {
     color: white;
-    background: #21003e;
+    background: #19002e;
   }
   
   .button,
@@ -133,7 +133,7 @@ html {
     -moz-appearance: none;
     appearance: none;
     background-color: transparent;
-    border: 0.1rem solid #21003e;
+    border: 0.1rem solid #19002e;
     border-radius: 0;
     box-shadow: none;
     box-sizing: inherit;
@@ -157,11 +157,11 @@ html {
   }
   
   td {
-    border-bottom: 0.1rem solid #21003e;
+    border-bottom: 0.1rem solid #19002e;
   }
   
   th {
-    border-bottom: 0.3rem solid #21003e;
+    border-bottom: 0.3rem solid #19002e;
     text-align: left;
   }
   
@@ -177,7 +177,7 @@ html {
   
   pre {
     background: lightgray;
-    border-left: 0.3rem solid #21003e;
+    border-left: 0.3rem solid #19002e;
   }
 
   code {
@@ -199,9 +199,9 @@ html {
     border-radius: 0;
     display: block;
     height: 1rem;
-    border: 0.1rem solid #21003e;
+    border: 0.1rem solid #19002e;
     background: white;
-    color: #21003e;
+    color: #19002e;
     overflow: hidden;
     padding: 0;
     width: 100%;
@@ -210,19 +210,19 @@ html {
     background-color: white;
   }
   progress::-webkit-progress-value {
-    background-color: #21003e;
+    background-color: #19002e;
   }
   progress::-moz-progress-bar {
-    background-color: #21003e;
+    background-color: #19002e;
   }
   progress::-ms-fill {
-    background-color: #21003e;
+    background-color: #19002e;
   }
   
   /* The Break Line */
   
   hr {
-    border: 0.2rem solid #21003e;
+    border: 0.2rem solid #19002e;
     border-bottom-width: 0.1rem;
   }
   
@@ -299,7 +299,7 @@ html {
   
   @media (prefers-color-scheme: dark) {
     body {
-      background: #21003e;
+      background: #19002e;
       color: white;
     }
     a {
@@ -313,7 +313,7 @@ html {
     input[type="button"],
     input[type="reset"],
     input[type="submit"] {
-      background: #21003e;
+      background: #19002e;
       color: white;
       border-color: white;
     }
@@ -322,7 +322,7 @@ html {
     input[type="button"].filled,
     input[type="reset"].filled,
     input[type="submit"].filled {
-      color: #21003e;
+      color: #19002e;
       background: white;
     }
     input[type="email"],
@@ -362,11 +362,11 @@ html {
       }    
     progress {
       border-color: white;
-      background: #21003e;
+      background: #19002e;
       color: white;
     }
     progress::-webkit-progress-bar {
-      background-color: #21003e;
+      background-color: #19002e;
     }
     progress::-webkit-progress-value {
       background-color: white;
