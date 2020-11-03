@@ -1,0 +1,397 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" type="text/css" href="/css/highlight.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+$.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">October 29, 2020</time>
+<title>Dynamic Logging in Python apps</title>
+<h1 class="article_title">Dynamic Logging in Python apps</h1>
+
+<div class="TOC">
+<ul>
+<li><a href="#setup">Setup</a>
+
+<ul>
+<li><a href="#write-a-logging-configuration-file">Write a Logging Configuration File</a></li>
+<li><a href="#read-the-logging-config-to-a-logger">Read the Logging Config to a Logger</a></li>
+<li><a href="#using-the-logger">Using the Logger</a></li>
+<li><a href="#lets-read-some-logs">Lets Read Some Logs</a></li>
+</ul></li>
+<li><a href="#making-the-logger-dynamic">Making the Logger Dynamic</a>
+
+<ul>
+<li><a href="#listen-for-new-configurations">Listen for New Configurations</a></li>
+<li><a href="#updating-active-loggers">Updating Active Loggers</a></li>
+<li><a href="#reading-the-output">Reading the Output</a></li>
+</ul></li>
+<li><a href="#conclusion">Conclusion</a>
+
+<ul>
+<li><a href="#drawbacks">Drawbacks</a></li>
+<li><a href="#benefits">Benefits</a></li>
+<li><a href="#details-and-sample-code">Details and Sample Code</a></li>
+</ul></li>
+</ul>
+</div>
+
+<p>Software visibility is vital to anyone running complex or large scale applications, and much of that visibility comes from software logs.
+Python provides a powerful implementation of a logging framework in its <a href="https://docs.python.org/3/library/logging.html">standard library</a>. To construct what it provides into a configurable logger, we need to do a few things first.</p>
+
+<h1 id="setup">Setup</h1>
+
+<p>To properly setup a customized <code>logger</code> <a href="https://github.com/python/cpython/blob/2d2af320d94afc6561e8f8adf174c9d3fd9065bc/Lib/logging/__init__.py#L1392">instance</a>, we need to create a configuration file and read from it.</p>
+
+<h2 id="write-a-logging-configuration-file">Write a Logging Configuration File</h2>
+
+<p>Since we want to keep configurations separate from code, lets put these away from our library:</p>
+
+<pre><code class="accesslog">project
+    ├── main.py
+    ├─┬ lib
+    │ ├── __init__.py
+    │ ├── color_formatter.py
+    │ └── logger.py
+    └─┬ logger_config
+      └── info.conf
+</code></pre>
+
+<p>We can build the <a href="https://docs.python.org/3/library/logging.config.html#configuration-file-format">configuration</a> like so:</p>
+
+<pre><code class="accesslog">[loggers]
+keys=root
+
+[handlers]
+keys=console
+
+[formatters]
+keys=default
+
+[formatter_default]
+class: logging.ColorFormatter
+format: '$YELLOW%(asctime)s $RESET- $MAGENTA%(module)s.%(funcName)s $RESET- $GREEN%(processName)s $RESET- $COLOR%(levelname)s $RESET- %(message)s'
+
+[handler_console]
+class: logging.StreamHandler
+formatter: default
+level: INFO
+
+[logger_root]
+level: INFO
+handlers: console
+</code></pre>
+
+<p>The first three entries tell Python the names of the logger, handler, and formatter we want it to use.</p>
+
+<p>To support colors in our logs, we <a href="https://github.com/ReagentX/LoggingExample/blob/main/lib/color_formatter.py">define</a> a custom <code>ColorFormatter</code> class that replaces the log format string with the proper escape codes for readability.</p>
+
+<p>This file defines a console hander that we will stream the logs into, but there are <a href="https://docs.python.org/3/library/logging.handlers.html#module-logging.handlers">other options</a>.</p>
+
+<h2 id="read-the-logging-config-to-a-logger">Read the Logging Config to a Logger</h2>
+
+<p>In <code>lib/logger.py</code>, when we construct the logger<sup><a href="#fn1-483" id="fnr1-483" title="see footnote" class="footnote">1</a></sup>, we call <code>loggingConfig(path)</code>, where <code>path</code> is the path to the configuration file we want to use<sup><a href="#fn2-483" id="fnr2-483" title="see footnote" class="footnote">2</a></sup>. This function reads in the configuration file and return an instance of the logger it describes:</p>
+
+<pre><code class="python">import logging
+import logging.config
+
+from .color_formatter import ColorFormatter
+
+def build_logger() -&gt; logging.Logger:
+    logging.ColorFormatter = ColorFormatter  # type: ignore
+    logging.config.fileConfig('logger_config/info.conf')
+    logger = logging.getLogger()  # Root logger
+    return logger
+
+
+LOGGER = build_logger()
+</code></pre>
+
+<p>By creating an instance of the logger in this file, we can import that reference instead of constructing a new logger instance when we need it.</p>
+
+<h2 id="using-the-logger">Using the Logger</h2>
+
+<p>In <code>main.py</code>, using the <code>logger</code> is simple:</p>
+
+<pre><code class="python">import time
+    
+from lib.logger import LOGGER
+
+while True:
+    time.sleep(2)
+    LOGGER.error('Oops, something weird happened.')
+    LOGGER.info('Hey, something happened.')
+    LOGGER.debug('Hey, something happened.')
+</code></pre>
+
+<p>This even works across processes<sup><a href="#fn3-483" id="fnr3-483" title="see footnote" class="footnote">3</a></sup>:</p>
+
+<pre><code class="python">import time 
+from multiprocessing import Process 
+
+from lib.logger import LOGGER
+
+
+def write_logs() -&gt; None: 
+    while True:
+        LOGGER.error('Oops, something weird happened.')
+        LOGGER.info('Hey, something happened.')
+        LOGGER.debug('Got http code 200.')
+        
+processes = [Process(target=write_logs) for _ in range(4)]
+proc_identifier = 0
+for process in processes:
+    proc_identifier += 1
+    process.name = f'Logging Process #{proc_identifier}'
+    process.start() 
+write_logs()
+</code></pre>
+
+<p>Since each process spawns <a href="../multiprocessing-changes-python-3-8/">in its own interpreter</a>, they each setup an instance of <code>LOGGER</code> and they each log to the same place: the parent process’s standard output and standard error.</p>
+
+<h2 id="lets-read-some-logs">Lets Read Some Logs</h2>
+
+<p>Let’s run this program through <a href="https://github.com/ReagentX/Logria">Logria</a>, my logging CLI tool with <code>logria -e 'python main.py'</code>:</p>
+
+<pre><code class="accesslog">2020-10-15 18:47:04,825 - main.write_logs - MainProcess - ERROR - Something weird happened.
+2020-10-15 18:47:04,825 - main.write_logs - MainProcess - INFO - A normal thing happened.
+2020-10-15 18:47:04,843 - main.write_logs - Logging Process #1 - ERROR - Something weird happened.
+2020-10-15 18:47:04,844 - main.write_logs - Logging Process #1 - INFO - A normal thing happened.
+2020-10-15 18:47:05,349 - main.write_logs - Logging Process #2 - ERROR - Something weird happened.
+2020-10-15 18:47:05,350 - main.write_logs - Logging Process #2 - INFO - A normal thing happened.
+2020-10-15 18:47:05,853 - main.write_logs - Logging Process #3 - ERROR - Something weird happened.
+2020-10-15 18:47:05,854 - main.write_logs - Logging Process #3 - INFO - A normal thing happened.
+2020-10-15 18:47:06,365 - main.write_logs - Logging Process #4 - ERROR - Something weird happened.
+2020-10-15 18:47:06,365 - main.write_logs - Logging Process #4 - INFO - A normal thing happened.
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│No filter applied
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+
+<p>Since we initialize the logger with <code>info.conf</code>, we see logs at the <code>INFO</code> level and above, as expected.</p>
+
+<p>If our app is running and we want to change this level to expose more detailed logs, the process needs to be restarted. While we can add gracefully exit logic and handle this, it would be far simpler to update the logging configuration after constructing it.</p>
+
+<h1 id="making-the-logger-dynamic">Making the Logger Dynamic</h1>
+
+<p>In order to adjust the detail level of logs on the fly, we need to make the logger smarter.</p>
+
+<h2 id="listen-for-new-configurations">Listen for New Configurations</h2>
+
+<p>Python provides a method called <a href="https://github.com/python/cpython/blob/2d2af320d94afc6561e8f8adf174c9d3fd9065bc/Lib/logging/config.py#L812"><code>.listen(port: int)</code></a> in the module <a href="https://github.com/python/cpython/blob/master/Lib/logging/config.py"><code>logging.config</code></a>. This creates an optional <code>ConfigStreamHandler</code> instance that listens on the given port for new logging configuration files and updates the currently running configuration accordingly.</p>
+
+<p>All we need to do is add logic to first validate whether a port is available, then connect to it. We set limits here so that the program does not inadvertently create too many unwanted connections.</p>
+
+<p>The new logic enables the logging server when deployed to an environment, but always enables debug logging when running locally.</p>
+
+<pre><code class="python">import logging
+import logging.config
+import os
+import socket
+
+from .color_formatter import ColorFormatter
+
+DEFAULT_FILES = {
+    'dev': 'logger_config/info.conf',
+    'test': 'logger_config/info.conf',
+    'prod': 'logger_config/error.conf',
+}
+
+
+def build_logger() -&gt; logging.Logger:
+    # Set the color prop so we can access it from the config
+    logging.ColorFormatter = ColorFormatter  # type: ignore
+
+    # Read initial config file based on environment name, default to debug
+    logging.config.fileConfig(
+        DEFAULT_FILES.get(
+            os.environ.get('ENV', ''), 
+            'logger_config/debug.conf'))
+
+    # Create and start listener on an open port
+    port = 9001
+    logging_config_listener = None
+    while port &lt; 9030:
+        try:
+            # Check if the socket is in use
+            socket_validator = socket.socket(socket.AF_INET,
+                                                socket.SOCK_STREAM)
+            socket_validator.connect(('localhost', port))
+            socket_validator.close()
+            port += 1
+            continue
+        # If the socket does not exist, Python raises this exception and we know we can use it
+        except ConnectionRefusedError:
+            logging_config_listener = logging.config.listen(port)
+            logging_config_listener.start()
+            print(f'Setup logging server on port {port}')
+            if port == 9030:
+                print('Out of logging ports! Please increase limit!')
+            break
+    if logging_config_listener is None:
+        raise ValueError(
+            'Unable to start logging server, all ports in use!')
+    logger = logging.getLogger()  # Root logger
+    return logger
+
+
+LOGGER = build_logger()
+</code></pre>
+
+<p>This code will loop over ports until it receives a <code>ConnectionRefusedError</code> or until the port range is exhausted. If it receives a <code>ConnectionRefusedError</code>, it means there is an available port on which to construct the <code>ConfigStreamHandler</code>.</p>
+
+<p>To connect to the port, we need to write a script to read the file, convert it to the <a href="https://github.com/python/cpython/blob/2d2af320d94afc6561e8f8adf174c9d3fd9065bc/Lib/logging/config.py#L843">stream</a> the <code>ConfigStreamHandler</code></p>
+
+<p>Since the listening <code>‌ConfigStreamHandler</code> uses <code>fileConfig()</code> <a href="https://github.com/python/cpython/blob/2d2af320d94afc6561e8f8adf174c9d3fd9065bc/Lib/logging/config.py#L869">internally</a>, we must use <code>fileConfig()</code> and not <code>dictConfig()</code> when constructing the logger<sup><a href="#fn4-483" id="fnr4-483" title="see footnote" class="footnote">4</a></sup>.</p>
+
+<h2 id="updating-active-loggers">Updating Active Loggers</h2>
+
+<p>Since our loggers are all in different processes, we need to send our logger configurations to all their ports. We can use the same method as above to determine what ports are in use and reverse the logic in <code>update_log_levels.py</code>:</p>
+
+<pre><code class="python">import socket
+import struct
+import sys
+
+with open(sys.argv[1], 'rb') as f:
+    data_to_send = f.read()
+
+HOST = 'localhost'
+PORT = 9001  # Must be the same as the port in `lib/logger.py`
+UPDATED_SERVERS = 0
+
+# Loop through all the ports on the server until we get one that does not have a logging server
+# `29` comes from the limit in the while loop in the aforementioned file, i.e. 9001..9030
+for port_num in range(PORT, PORT + 29):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((HOST, port_num))
+        print(f'Connecting to logging server on port {port_num}...')
+    except ConnectionRefusedError:
+        break
+    print('Sending new config...')
+    s.send(struct.pack('&gt;L', len(data_to_send)))
+    s.send(data_to_send)
+    UPDATED_SERVERS += 1
+    s.close()
+if UPDATED_SERVERS &gt; 0:
+    print('Logging configuration updated!')
+else:
+    print('Unable to connect to any logging servers!')
+</code></pre>
+
+<p>We can add this file here:</p>
+
+<pre><code class="accesslog">project
+├── main.py
+├─┬ lib
+│ ├── __init__.py
+│ ├── color_formatter.py
+│ └── logger.py
+└─┬ logger_config
+  ├── debug.conf
+  ├── info.conf
+  ├── error.conf
+  └── update_log_levels.py
+</code></pre>
+
+<h2 id="reading-the-output">Reading the Output</h2>
+
+<p>After running these it, we now see the logs, as we should:</p>
+
+<pre><code class="accesslog">2020-10-15 18:47:04,825 - main.write_logs - MainProcess - ERROR - Something weird happened.
+2020-10-15 18:47:04,825 - main.write_logs - MainProcess - INFO - A normal thing happened.
+2020-10-15 18:47:04,843 - main.write_logs - Logging Process #1 - ERROR - Something weird happened.
+2020-10-15 18:47:04,844 - main.write_logs - Logging Process #1 - INFO - A normal thing happened.
+2020-10-15 18:47:05,349 - main.write_logs - Logging Process #2 - ERROR - Something weird happened.
+2020-10-15 18:47:05,350 - main.write_logs - Logging Process #2 - INFO - A normal thing happened.
+2020-10-15 18:47:05,853 - main.write_logs - Logging Process #3 - ERROR - Something weird happened.
+2020-10-15 18:47:05,854 - main.write_logs - Logging Process #3 - INFO - A normal thing happened.
+2020-10-15 18:47:06,365 - main.write_logs - Logging Process #4 - ERROR - Something weird happened.
+2020-10-15 18:47:06,365 - main.write_logs - Logging Process #4 - INFO - A normal thing happened.
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│No filter applied
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+
+<p>If we open another shell and run an update command, for example, <code>python update_log_levels.py error.conf</code>, we can observe the log levels change in our Logria stream:</p>
+
+<pre><code class="accesslog">2020-10-15 19:07:24,897 - main.write_logs - MainProcess - ERROR - Something weird happened.
+2020-10-15 19:07:24,915 - main.write_logs - Logging Process #1 - ERROR - Something weird happened.
+2020-10-15 19:07:25,421 - main.write_logs - Logging Process #2 - ERROR - Something weird happened.
+2020-10-15 19:07:25,932 - main.write_logs - Logging Process #3 - ERROR - Something weird happened.
+2020-10-15 19:07:26,435 - main.write_logs - Logging Process #4 - ERROR - Something weird happened.
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│No filter applied
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>There are several ways to use the standard library logger to work with your apps, and this one allows you to adjust the log level details without restarting the app across parallel processes. It will not interrupt compute processes and allows the application run normally while dynamically providing visibility to the process.</p>
+
+<h2 id="drawbacks">Drawbacks</h2>
+
+<p>No solution is without flaw. For this one to work, we guarantee specific ports are free. The software must wait when starting up to ensure multiple processes do not try and connect over the same port. It increases cognitive complexity, as it adds another set local network traffic to monitor.</p>
+
+<h2 id="benefits">Benefits</h2>
+
+<p>However, we are now able to remotely update the level we record without any downtime while the server is running and even during running compute tasks.</p>
+
+<h2 id="details-and-sample-code">Details and Sample Code</h2>
+
+<p>You can view, run, and edit the implementation in <a href="https://repl.it/@reagentx/LoggingExample">this repl</a>, read it on GitHub <a href="https://github.com/ReagentX/LoggingExample/">here</a>, or download it in <a href="https://github.com/ReagentX/LoggingExample/archive/main.zip">this</a> zip file.</p>
+
+<hr />
+<center>View as: <a href="Dynamic-Log-Levels-in-Python-Apps.pdf">PDF</a>, <a href="Dynamic-Log-Levels-in-Python-Apps.md">Markdown</a></center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-483">
+<p>We use <code>fileConfig()</code> and not the newer <code>dictConfig</code> because later we use a method that requires <code>fileConfig()</code>. <a href="#fnr1-483" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn2-483">
+<p>There are many ways to select which configuration file we use: hardcode and manually change, use an environment variable, or write internal code to call <a href="https://docs.python.org/3/library/logging.html?highlight=logging#logging.Logger.setLevel"><code>setLevel()</code></a> on all loggers in case of an exception. More on that later. <a href="#fnr2-483" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn3-483">
+<p>There is no need to call <code>.join()</code> in this example because the processes are all infinite loops. <a href="#fnr3-483" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+<li id="fn4-483">
+<p>There are <a href="https://docs.python.org/3/library/logging.config.html#configuration-file-format">drawbacks</a> to this, but it is the method we are required to use. <a href="#fnr4-483" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>
