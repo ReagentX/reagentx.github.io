@@ -1,4 +1,10 @@
 [
+    
+    {
+        "slug": "blog/dynamic-logging-in-python-apps/",
+        "title": "Dynamic Logging in Python apps",
+        "date": "10/29/20"
+    },
     {
         "slug": "blog/why-my-lambdas-timeout/",
         "title": "Why My Lambdas Unexpectedly Timed Out",
