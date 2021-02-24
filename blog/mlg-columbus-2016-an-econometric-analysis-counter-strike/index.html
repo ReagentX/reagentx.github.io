@@ -116,14 +116,14 @@
 <p><a href="https://github.com/akiver/CSGO-Demos-Manager">CSGO-Demos-Manager</a> is an invaluable open-source tool for analyzing CS:GO demo files. It will “play” through a demo, tracking many different variables. Because the project is open source, it is easily extensible. However, it only runs on Windows. </p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/csgodemosmanager-screenshot.png" alt="CS:GO-Demos-Manager" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/csgodemosmanager-screenshot.png" alt="CS:GO-Demos-Manager" />
 <figcaption>CS:GO-Demos-Manager</figcaption>
 </figure>
 
 <p>Once CSGO-Demos-Manager has analyzed the relevant demo files, users can choose to export the data to Excel as a group or individually. Both of the exports look more or less the same: a 6-sheet Excel table:</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/mlgfull.png" alt="MLG 2016 flat file with additional calculated columns" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/mlgfull.png" alt="MLG 2016 flat file with additional calculated columns" />
 <figcaption>MLG 2016 flat file with additional calculated columns</figcaption>
 </figure>
 
@@ -172,7 +172,7 @@
 <p>Once the <code>Round Winner = Match Winner?</code> column has been created, it is simple to count the data with a simple <code>=COUNTIF</code> formula. Create two cells far off to the right of the data and use the following formula: <code>=COUNTIFS(H:H,&quot;Pistol round&quot;, AO:AO,1)</code>. This checks the <code>Type</code> column and restricts it to pistol rounds and then counts the frequency of <strong>1</strong> in the <code>Round Winner = Match Winner?</code> column. Directly this we use `<code>=COUNTIFS(H:H,&quot;Pistol round&quot;, AO:AO,0)</code> to get the frequency of <strong>0</strong> in the same column.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/roundcountif1.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/roundcountif1.png" alt="" />
 </figure>
 
 <p>Simple division with <code>=BB2/COUNTIF(H:H, &quot;Pistol round&quot;)</code> and <code>=BB3/COUNTIF(H:H, &quot;Pistol round”)</code> allow us to calculate the proportion of wins and losses. According to the data, this results in:</p>
@@ -207,7 +207,7 @@
 </table>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/pistolpie.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/pistolpie.png" alt="" />
 </figure>
 
 <p>The data shows a 67% match rate, which indicates that the Pistol Round winner is the Match Winner 67% of the time. This is to say that winning the pistol round achieves a 2/3 probability of winning the entire match. To clarify, the word “Match” in the chart indicates rounds where the pistol round winner matches the match winner.</p>
@@ -223,7 +223,7 @@
 <p>This formula uses a nested <code>=IF</code>. The interior statement checks if Team 1 starts with more equipment than Team 2. If Team one starts with more, the formula pulls Team 1’s name from the <code>General</code> sheet. If Team 2 starts with more, it pulls that name instead. Next, the exterior statement compares the string result from the interior statement to the string in the <code>Match Winner</code> column. If the strings match, Team 1 is the winner, and the formula outputs a <strong>1</strong>. If Team 2 is the winner, the formula outputs <strong>0</strong>. This column now calculates which team has better equipment and if having better equipment corresponds with a win.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/roundcountif2.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/roundcountif2.png" alt="" />
 </figure>
 
 <p>As before, use <code>=COUNTIF(AR:AR,1)</code> and <code>=COUNTIF(AR:AR,0)</code> to count the frequency at which this specific test occurs. This formula is far simpler than before because we are not using other columns to restrict counting.</p>
@@ -260,7 +260,7 @@
 <p>Further, <code>=BB8/SUM(BB8:BB9)</code> and <code>=BB9/SUM(BB8:BB9)</code> can be used to calculate the relevant proportion.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/econpie.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/econpie.png" alt="" />
 </figure>
 
 <p>The winner has better equipment 60% of the time — barely more than half. This demonstrates that, at the professional level, the game’s economy has little effect on various outcomes. </p>
@@ -270,7 +270,7 @@
 <p>Sadly, Excel hits a wall when it comes to more advanced econometric plotting and analysis. However, Stata’s data entry system can be slow and arduous; it is often a better choice to use Excel to create the data and then simply copy it into Stata. This section will describe several new columns that will not be used in the Excel analysis but will come into play for the Stata section.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/formulacells-img.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/formulacells-img.png" alt="" />
 </figure>
 
 <p>These columns in the <code>Rounds</code> sheet are as follows:</p>
@@ -367,21 +367,21 @@
 <p>Next, the kill totals must also be adjusted. Adding a column next to kills with <code>=D2/C2</code><sup><a href="#fn78758" id="fnr78758" title="see footnote" class="footnote">10</a></sup> will adjust the kill count to a per-match ratio. If we do not adjust the kill totals, we get skewed output like this:</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adjk-scatter.png" alt="Total kills plotted against adjusted kill quantity" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adjk-scatter.png" alt="Total kills plotted against adjusted kill quantity" />
 <figcaption>Total kills plotted against adjusted kill quantity</figcaption>
 </figure>
 
 <p>The file <em>MLGPlayerData.dta</em> attached below already has these columns inserted. </p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adj-table.png" alt="Location of unadjusted and adjusted data columns" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adj-table.png" alt="Location of unadjusted and adjusted data columns" />
 <figcaption>Location of unadjusted and adjusted data columns</figcaption>
 </figure>
 
 <p>Once the data is imported to Stata, we use the <code>scatter</code> command to make the scatterplot. To scatter Total Kills to the Adjusted 1K Ratio, enter <code>scatter killspermatch adj1, mlabel(name)</code>. To scatter the other adjusted kill ratios, use <code>adj2</code>, <code>adj3</code>, and so on. Adding <code>,mlabel(name)</code> tags each point with the corresponding player name.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adjkill-andkn-img.png" alt="Adjusted total kills plotted against adjusted kill quantity" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/adjkill-andkn-img.png" alt="Adjusted total kills plotted against adjusted kill quantity" />
 <figcaption>Adjusted total kills plotted against adjusted kill quantity</figcaption>
 </figure>
 
@@ -398,13 +398,13 @@
 <p>These imported variable names are quite long. Luckily, Stata has an autocomplete feature: press the <strong>Tab</strong> key to bring up a list of variables that complete the text entered in the command line.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/tabautocomplete.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/tabautocomplete.png" alt="" />
 </figure>
 
 <p>Regressing variables onto <code>isteam1thewinner</code> will find the impact said variables have on influencing Team 1 to beat Team 2. For example, <code>reg isteam1thewinner equipementvalueteam1 equipementvalueteam2</code> does a multiple regression to ascertain the effects variables <code>equipementvalueteam1</code> and <code>equipementvalueteam2</code> have on the variable <code>isteam1thewinner</code>. This command results in:</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg1.png" alt="Regressing variables equipementvalueteam1 and equipementvalueteam2 onto isteam1thewinner." />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg1.png" alt="Regressing variables equipementvalueteam1 and equipementvalueteam2 onto isteam1thewinner." />
 <figcaption>Regressing variables equipementvalueteam1 and equipementvalueteam2 onto isteam1thewinner.</figcaption>
 </figure>
 
@@ -415,7 +415,7 @@
 <p>The variable <code>doesteam1havemoreequipment</code> allows us to perform another simple regression onto <code>isteam1thewinner</code>, this time to determine the overall effect of having more equipment. </p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg2.png" alt="Regressing variable doesteam1havemoremoney onto isteam1thewinner" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg2.png" alt="Regressing variable doesteam1havemoremoney onto isteam1thewinner" />
 <figcaption>Regressing variable doesteam1havemoremoney onto isteam1thewinner</figcaption>
 </figure>
 
@@ -455,19 +455,19 @@
 <p>Value of team inventories occasionally forces teams to save and purposely not buy inventory — a strategy dubbed <em>Eco</em> or <em>Semi-eco</em> to try and push back later. CSGO-Demos-Manager is able to automatically analyze the type of round and conveniently creates a <code>Type</code> column that contains the information:</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/tabulate.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/tabulate.png" alt="" />
 </figure>
 
 <p>To study the effects of this strategy the data needs to be restricted to only show <em>Eco</em> and <em>Semi-eco</em> rounds: simply filter the <code>Type</code> column on the <code>Round</code> sheet.<sup><a href="#fn29180" id="fnr29180" title="see footnote" class="footnote">13</a></sup></p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/filtereco.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/filtereco.png" alt="" />
 </figure>
 
 <p>Once the data has been restricted and imported to Stata, regressing <code>doesteam1havemoremoney</code> onto <code>isteam1thewinner</code> elucidates the effects of better equipment:</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg3.png" alt="" />
+<img src="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/img/reg3.png" alt="" />
 </figure>
 
 <p>The regression line is <code>y = 0.79x + 0.126</code>. This tells us that having more equipment — β<sub>2</sub> — raises the odds of winning an eco or semi-eco round by 79%. While this is high, it means that variables other than equipment affect the outcome of eco rounds – but only 9% of the time.</p>
@@ -476,10 +476,10 @@
 
 <h1 id="rawdata">Raw Data</h1>
 
-<p>This data comes in 3 major formats: Demo (.dem), Excel (.xlsx), and Stata (.dta). HLTV.org hosts the demo files. All of the files used are located in the <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data">/data</a> directory of this post. These are the individual files with respective descriptions:</p>
+<p>This data comes in 3 major formats: Demo (.dem), Excel (.xlsx), and Stata (.dta). HLTV.org hosts the demo files. All of the files used are located in the <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/data">/data</a> directory of this post. These are the individual files with respective descriptions:</p>
 
 <ul>
-<li><em>MLG2016Full.xlsx</em> (461 kb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLG2016Full.xlsx">Direct Download</a> | <a href="https://docs.google.com/spreadsheets/d/1ci4yTP9FrUfPLdJMhRcWZcntQu9HQ9uwIdjTNWrd3bM/edit#gid=1079598177">View Google Sheet</a>
+<li><em>MLG2016Full.xlsx</em> (461 kb) | <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLG2016Full.xlsx">Direct Download</a> | <a href="https://docs.google.com/spreadsheets/d/1ci4yTP9FrUfPLdJMhRcWZcntQu9HQ9uwIdjTNWrd3bM/edit#gid=1079598177">View Google Sheet</a>
 
 <ul>
 <li>Annotated and formatted like this article describes</li>
@@ -515,22 +515,22 @@
 </ul></li>
 </ul></li>
 </ul></li>
-<li><em>MLGTeamData.dta</em> (26 kb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGTeamData.dta">Direct Download</a>
+<li><em>MLGTeamData.dta</em> (26 kb) | <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGTeamData.dta">Direct Download</a>
 
 <ul>
 <li>Stata file with variables pulled from the <code>Teams</code> sheet of <em>MLG2016Full.xlsx</em></li>
 </ul></li>
-<li><em>MLGPlayerData.dta</em> (45 kb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGPlayerData.dta">Direct Download</a>
+<li><em>MLGPlayerData.dta</em> (45 kb) | <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGPlayerData.dta">Direct Download</a>
 
 <ul>
 <li>Stata file with variables pulled from the <code>Players</code> sheet of <em>MLG2016Full.xlsx</em></li>
 </ul></li>
-<li><em>MLGFull.dta</em> (256 kb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGFull.dta">Direct Download</a>
+<li><em>MLGFull.dta</em> (256 kb) | <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/MLGFull.dta">Direct Download</a>
 
 <ul>
 <li>Stata file with variables pulled from the <code>Rounds</code> sheet of <em>MLG2016Full.xlsx</em></li>
 </ul></li>
-<li><em>rawData.zip</em> (1.1 mb) | <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/rawData.zip">Direct Download</a>
+<li><em>rawData.zip</em> (1.1 mb) | <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/data/rawData.zip">Direct Download</a>
 
 <ul>
 <li>Contains an unannotated copy of <em>MLG2016Full.xlsx</em> as well as individual data exports for each match in the Columbus 2016 competition folder according to level of bracket.</li>

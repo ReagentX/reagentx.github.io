@@ -43,14 +43,14 @@
 
 <hr />
 
-<p>My last <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/">post</a> about the Counter-Strike Global Offensive <a href="https://twitter.com/rxcs/timelines/734113232655286272">Major</a> in Columbus <a href="https://twitter.com/rxcs/status/728093153203359744">exploded</a>, prompting more <a href="https://twitter.com/rxcs/status/747570222832332801">digging</a> into better data. Along the way, there were several roadblocks that can be easily solved with a few simple tools in Excel.</p>
+<p>My last <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/">post</a> about the Counter-Strike Global Offensive <a href="https://twitter.com/rxcs/timelines/734113232655286272">Major</a> in Columbus <a href="https://twitter.com/rxcs/status/728093153203359744">exploded</a>, prompting more <a href="https://twitter.com/rxcs/status/747570222832332801">digging</a> into better data. Along the way, there were several roadblocks that can be easily solved with a few simple tools in Excel.</p>
 
 <h2 id="acquiringdata">Acquiring Data</h2>
 
 <p>Team Liquid, founded in 2000, is a leading worldwide professional esports organization. Analyzing their historical match data is a big task, but one that can be streamlined with several pieces of software. As before, <a href="HLTV.org">HLTV.org</a>’s brilliant searchable <a href="http://www.hltv.org/matches/archive/">index</a> of historical CS:GO matches becomes extremely useful. To narrow down the matches to the ones relevant to Liquid, filter on “Liquid” under <em>Team</em> and tick the “Has Demo” filter.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/hltv-query.png" alt="" />
+<img src="https://chrissardegna.com/blog/cleaning-team-liquids-historical-data/img/hltv-query.png" alt="" />
 </figure>
 
 <p>It should return about 93 matches<sup><a href="#fn1" id="fnr1" title="see footnote" class="footnote">1</a></sup>. Once downloaded, copy them to <code>C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo</code> and open <a href="https://github.com/akiver/CSGO-Demos-Manager">CSGO-Demos-Manager</a>. Once analyzed, export the demos to a single file. This is where the fun begins.</p>
@@ -61,24 +61,24 @@
 
 <h2 id="generalsheet">General Sheet</h2>
 
-<p>The winner column in the CSGO-Demos-Manager export has historically been <a href="https://github.com/akiver/CSGO-Demos-Manager/issues/74">wrong</a>, so it is best to <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/#generalsheet">replace</a> that column with an <code>=IF</code> that checks the <code>Score team 1</code> and <code>Score team 2</code> columns to find the proper winner. This formula can be used to find the winner at the half as well: simply add a new column and fill with the proper cell references to the <code>Score 1st half team 1</code> and <code>Score 1st half team 2</code> columns.</p>
+<p>The winner column in the CSGO-Demos-Manager export has historically been <a href="https://github.com/akiver/CSGO-Demos-Manager/issues/74">wrong</a>, so it is best to <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/#generalsheet">replace</a> that column with an <code>=IF</code> that checks the <code>Score team 1</code> and <code>Score team 2</code> columns to find the proper winner. This formula can be used to find the winner at the half as well: simply add a new column and fill with the proper cell references to the <code>Score 1st half team 1</code> and <code>Score 1st half team 2</code> columns.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/winner-if.png" alt="" />
+<img src="https://chrissardegna.com/blog/cleaning-team-liquids-historical-data/img/winner-if.png" alt="" />
 </figure>
 
-<p>There is a far more pressing issue, however. All of the ESEA matches lack a team name. This is due to the <a href="https://twitter.com/rxcs/status/747571575650553856">nomenclature</a> they use in their demo files. Instead of listing “Team 1” as “Liquid,” ESEA demos lost “Team 1” as “Team 1” and “Team 2” as “Team 2.” This is incredibly frustrating because the <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/#matchwinner">original method</a> of linking the round winner to the <code>Rounds</code> sheet is now broken. To fix this, either omit the ESEA matches from the export and try again<sup><a href="#fn2" id="fnr2" title="see footnote" class="footnote">2</a></sup> or manually find the proper team names. </p>
+<p>There is a far more pressing issue, however. All of the ESEA matches lack a team name. This is due to the <a href="https://twitter.com/rxcs/status/747571575650553856">nomenclature</a> they use in their demo files. Instead of listing “Team 1” as “Liquid,” ESEA demos lost “Team 1” as “Team 1” and “Team 2” as “Team 2.” This is incredibly frustrating because the <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/#matchwinner">original method</a> of linking the round winner to the <code>Rounds</code> sheet is now broken. To fix this, either omit the ESEA matches from the export and try again<sup><a href="#fn2" id="fnr2" title="see footnote" class="footnote">2</a></sup> or manually find the proper team names. </p>
 
 <p>The easiest way to do this is to select the ESEA matches in CSGO-Demos-Manager and export them all individually. Then, on the <code>Players</code> sheet of the individual match exports, manually match the team name with the player’s respective team and enter it in the proper cell on the <code>General</code> sheet of the group export.</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/indivi-export.png" alt="" />
+<img src="https://chrissardegna.com/blog/cleaning-team-liquids-historical-data/img/indivi-export.png" alt="" />
 </figure>
 
 <p>For example, in the <code>Players</code> sheet of the individual match export above, the team name “Team 2” in the <code>General</code> sheet of the group export is actually “OpTic” and “Team 1” is actually “Liquid.” Here are the corrected cells, highlighted in green:</p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/team-corrected.png" alt="" />
+<img src="https://chrissardegna.com/blog/cleaning-team-liquids-historical-data/img/team-corrected.png" alt="" />
 </figure>
 
 <p>A lack of standardized nomenclature between leagues causes CSGO-Demos-Manager to list individual teams under multiple names, i.e. Liquid as “Liquid” and “Team Liquid.” To correct for this, a simple find-and-replace will suffice. This different team name nomenclature is a problem that affects almost all of the sheets and correcting the <code>General</code> sheet reduces the work later on.</p>
@@ -88,7 +88,7 @@
 <p>Because teams have entries under different names, the <code>Teams</code> sheet is entirely useless. To see the proper statistics, replace the entire sheet with a PivotTable of the <code>General</code> sheet. Set the <code>Row</code> to focus on <code>Winner</code> and add the relevant columns as values. </p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/cleaning-team-liquids-historical-data/img/teams-pivot.png" alt="" />
+<img src="https://chrissardegna.com/blog/cleaning-team-liquids-historical-data/img/teams-pivot.png" alt="" />
 </figure>
 
 <p>This automates the model so that any more changes to the <code>General</code> sheet will be reflected by the <code>Teams</code> sheet.</p>
@@ -101,7 +101,7 @@
 
 <p>The first part of the formula checks if the <code>Winner</code> column is “Team 2” and if it uses a <code>VLOOKUP</code> to pull Team 2’s name from the <code>General</code> sheet. If that case is not hit, it checks if the <code>Winner</code> column is “Team 1” and if it uses a <code>VLOOKUP</code> to pull Team 1’s name from the <code>General</code> sheet. If neither of these cases are hit it checks if the cell is empty. If the cell has data, it then copies whatever was in that cell. This way it will only alter the data if the string “Team 1” or “Team 2” is present.</p>
 
-<p>To reference the match winner, add a new column at the end of the <code>Rounds</code> sheet like <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/#matchwinner">before</a>. A simple formula like <code>=VLOOKUP(A2,General!B:V,21,FALSE)</code> will pull the proper match winner.</p>
+<p>To reference the match winner, add a new column at the end of the <code>Rounds</code> sheet like <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/#matchwinner">before</a>. A simple formula like <code>=VLOOKUP(A2,General!B:V,21,FALSE)</code> will pull the proper match winner.</p>
 
 <h1 id="summarizingdata">Summarizing Data</h1>
 
@@ -136,7 +136,7 @@
 </tbody>
 </table>
 
-<p>This dataset is now ripe for expansion like the <a href="https://chrissardegna.com/blog/posts/mlg-columbus-2016-an-econometric-analysis-counter-strike/">MLG Columbus</a> analysis. </p>
+<p>This dataset is now ripe for expansion like the <a href="https://chrissardegna.com/blog/mlg-columbus-2016-an-econometric-analysis-counter-strike/">MLG Columbus</a> analysis. </p>
 
 <div class="footnotes">
 <hr />

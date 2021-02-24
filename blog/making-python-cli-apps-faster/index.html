@@ -1,0 +1,321 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/css/blog.css">
+<link rel="stylesheet" type="text/css" href="/css/highlight.css">
+<link rel="stylesheet" media="all" href="/js/bigfoot/dist/bigfoot-number.css" />
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script type="text/javascript" src="/js/bigfoot/dist/bigfoot.min.js"></script>
+<script type="text/javascript">
+    $.bigfoot();
+</script>
+</head>
+<body>
+<header class="header">
+<h1 class="title">Christopher Sardegna's Blog</h1>
+<h3 class="subtitle">Thoughts on technology, design, data analysis, and data visualization.</h3>
+<p class="menu">
+<a class="button" href="/">About</a>
+<a class="button" href="/blog">Home</a>
+<a class="button" href="https://github.com/ReagentX">GitHub</a>
+<a class="button" href="https://twitter.com/rxcs">Twitter</a>
+<a class="button" href="https://www.linkedin.com/in/chrissardegna/">LinkedIn</a>
+</p>
+<hr />
+</header>
+<time class="article_time">February 8, 2019</time>
+<title>Making Python CLI Apps Faster</title>
+<h1 class="article_title">Making Python CLI Apps Faster</h1>
+
+<div class="TOC">
+<ul>
+<li><a href="#performance-testing">Performance Testing</a>
+
+<ul>
+<li><a href="#methodology">Methodology</a></li>
+<li><a href="#understanding">Understanding</a></li>
+</ul></li>
+<li><a href="#issues-found">Issues Found</a>
+
+<ul>
+<li><a href="#issues-found">Issues Found</a></li>
+<li><a href="#drawing-too-often">Drawing Too Often</a>
+
+<ul>
+<li><a href="#drawing-code">Drawing Code</a></li>
+</ul></li>
+<li><a href="#polling-too-fast">Polling Too Fast</a>
+
+<ul>
+<li><a href="#naive-solution">Naive Solution</a></li>
+<li><a href="#smart-solution">Smart Solution</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#conclusions">Conclusions</a></li>
+</ul>
+</div>
+
+<p>As programmers, we can create tools to make programming easier. Often this means building something that can be easily invoked on the command line, whether it is a bash script or a CLI app with a full UI. This post focuses on optimizing the latter option.</p>
+
+<h1 id="performance-testing">Performance Testing</h1>
+
+<p>To find bottlenecks in our programs, we can profile them. For this example, we will optimize the performance of the Python edition of <a href="https://github.com/ReagentX/Logria-py">Logria</a>, which is powered by <a href="https://docs.python.org/3/library/curses.html#module-curses">curses</a>. According to <code>htop</code>, it consumes nearly 100% of the CPU when it runs, even when idle.</p>
+
+<h2 id="methodology">Methodology</h2>
+
+<p>Python provides a tool called <a href="https://docs.python.org/3/library/profile.html#instant-user-s-manual"><code>cprofile</code></a>. To invoke it, we write:</p>
+
+<pre><code class="bash">python -m cProfile -s time logria/__main__.py
+</code></pre>
+
+<p>This invokes <code>cprofile</code> on the program's entry point, <code>__main__.py</code>. I allowed the app to run for about 10 seconds, then killed it with <code>⌃-c</code>.</p>
+
+<p>This provides us with interesting information:</p>
+
+<pre><code class="bash">   10107910 function calls (10106894 primitive calls) in 11.319 seconds
+
+   Ordered by: internal time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     4468    4.357    0.001    4.357    0.001 {built-in method time.sleep}
+   114752    1.365    0.000    4.002    0.000 color_handler.py:99(_add_line)
+   770183    0.762    0.000    0.762    0.000 {method 'addstr' of '_curses.window' objects}
+   655424    0.448    0.000    0.840    0.000 color_handler.py:80(_color_str_to_color_pair)
+   770176    0.412    0.000    0.412    0.000 {method 'noutrefresh' of '_curses.window' objects}
+   116765    0.370    0.000    0.370    0.000 {method 'sub' of 're.Pattern' objects}
+     4465    0.310    0.000    0.310    0.000 {method 'refresh' of '_curses.window' objects}
+   884959    0.251    0.000    0.251    0.000 {method 'split' of 'str' objects}
+   770176    0.248    0.000    0.248    0.000 color_handler.py:59(_get_color)
+     2167    0.242    0.000    5.670    0.003 shell_output.py:125(render_text_in_output)
+    19194    0.230    0.000    0.230    0.000 {method 'poll' of 'select.poll' objects}
+  1311264    0.183    0.000    0.183    0.000 {method 'get' of 'dict' objects}
+   114752    0.163    0.000    4.219    0.000 color_handler.py:129(_inner_addstr)
+   770176    0.152    0.000    0.152    0.000 {built-in method _curses.getsyx}
+   114752    0.123    0.000    4.378    0.000 color_handler.py:145(addstr)
+   770176    0.110    0.000    0.110    0.000 {built-in method _curses.color_pair}
+    19194    0.098    0.000    0.643    0.000 connection.py:917(wait)
+   116765    0.089    0.000    0.667    0.000 regex_generator.py:26(get_real_length)
+   116898    0.073    0.000    0.126    0.000 re.py:289(_compile)
+   116765    0.072    0.000    0.563    0.000 re.py:203(sub)
+        1    0.059    0.059   11.255   11.255 shell_output.py:279(main)
+</code></pre>
+
+<h2 id="understanding">Understanding</h2>
+
+<p>These lines are relevant to Logria. The rest are internal to Python or <code>curses</code>:</p>
+
+<pre><code class="bash">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.059    0.059   11.255   11.255 shell_output.py:279(main)
+     2167    0.242    0.000    5.670    0.003 shell_output.py:125(render_text_in_output)
+   114752    0.123    0.000    4.378    0.000 color_handler.py:145(addstr)
+   114752    0.163    0.000    4.219    0.000 color_handler.py:129(_inner_addstr)
+   114752    1.365    0.000    4.002    0.000 color_handler.py:99(_add_line)
+   655424    0.448    0.000    0.840    0.000 color_handler.py:80(_color_str_to_color_pair)
+    19194    0.098    0.000    0.643    0.000 connection.py:917(wait)
+   116765    0.089    0.000    0.667    0.000 regex_generator.py:26(get_real_length)
+   770176    0.412    0.000    0.412    0.000 {method 'noutrefresh' of '_curses.window' objects}
+   116765    0.370    0.000    0.370    0.000 {method 'sub' of 're.Pattern' objects}
+     4465    0.310    0.000    0.310    0.000 {method 'refresh' of '_curses.window' objects}
+   770176    0.248    0.000    0.248    0.000 color_handler.py:59(_get_color)
+</code></pre>
+
+<h1 id="issues-found">Issues Found</h1>
+
+<p>Let’s go line by line and see what the problem might be:</p>
+
+<pre><code class="log">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.059    0.059   11.255   11.255 shell_output.py:279(main)
+</code></pre>
+
+<p>This is the main app loop, as evinced by a single call. This function cannot be optimized because all it does is run the app.</p>
+
+<pre><code class="log">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     2167    0.242    0.000    5.670    0.003 shell_output.py:125(render_text_in_output)
+</code></pre>
+
+<p>The method <code>render_text_in_output()</code> has the highest cumulative execution time. If this function gets called, we are guaranteed to check the message queues, parse the messages, apply user filters and rules, and refresh the screen.</p>
+
+<pre><code class="bash">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   114752    0.123    0.000    4.378    0.000 color_handler.py:145(addstr)
+   114752    0.163    0.000    4.219    0.000 color_handler.py:129(_inner_addstr)
+   114752    1.365    0.000    4.002    0.000 color_handler.py:99(_add_line)
+   655424    0.448    0.000    0.840    0.000 color_handler.py:80(_color_str_to_color_pair)
+</code></pre>
+
+<p>The next few lines come from <code>color_handler</code>, a module that handles rendering output through curses with ASCII color codes. Since they are all direct calls to <code>curses</code>, these cannot be optimized. However, the functions in this module are only invoked when <code>render_text_in_output()</code> is called; if we can call <code>render_text_in_output()</code> less, we will invoke <code>color_handler</code> functions less.</p>
+
+<pre><code class="log">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    19194    0.098    0.000    0.643    0.000 connection.py:917(wait)
+</code></pre>
+
+<p><code>wait()</code> is an <a href="https://github.com/python/cpython/blob/5f18c223391eef8c7d01241b51a7b2429609dd84/Lib/multiprocessing/connection.py#L832">internal Python function</a> that ensures we can read from the multiprocessing queues Logria uses to read messages. While this cannot be optimized, checking the queues less often will reduce the number of calls to this method.</p>
+
+<pre><code class="log">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   116765    0.089    0.000    0.667    0.000 regex_generator.py:26(get_real_length)
+</code></pre>
+
+<p><code>render_text_in_output()</code> calls <code>get_real_length()</code> to ensure we render the proper amount of lines, as calling <code>len()</code> won’t give us the correct character count if there are ASCII sequences embedded in the string. It uses a regex to remove ASCII codes. While it could probably be optimized, calling it less is also a solution.</p>
+
+<pre><code class="log">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   770176    0.412    0.000    0.412    0.000 {method 'noutrefresh' of '_curses.window' objects}
+</code></pre>
+
+<p>This is an internal <code>curses</code> method. It is invoked inside <code>render_text_in_output()</code> whenever we want to redraw the screen.</p>
+
+<pre><code class="log">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   116765    0.370    0.000    0.370    0.000 {method 'sub' of 're.Pattern' objects}
+</code></pre>
+
+<p>This is from the call to <code>get_real_length()</code> and cannot be optimized.</p>
+
+<pre><code class="log">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     4465    0.310    0.000    0.310    0.000 {method 'refresh' of '_curses.window' objects}
+</code></pre>
+
+<p>This call is inside of <code>render_text_in_output()</code> and is required to tell <code>curses</code> to render text.</p>
+
+<pre><code class="log">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   770176    0.248    0.000    0.248    0.000 color_handler.py:59(_get_color)
+</code></pre>
+
+<p>Finally, this call checks a hashmap to ensure we choose the proper <code>curses</code> <a href="https://docs.python.org/3/library/curses.html#curses.color_pair">color_pair()</a> when rendering. It cannot be optimized because it is a simple <code>O(1)</code> lookup that memoizes the <code>curses</code> method.</p>
+
+<h2 id="issues-found">Issues Found</h2>
+
+<p>From this analysis, we can tell that we are doing two things that significantly impact performance: drawing the UI via <code>render_text_in_output()</code> too much and reading from our message queues too frequently.</p>
+
+<h2 id="drawing-too-often">Drawing Too Often</h2>
+
+<p>Every loop, the app calls <code>render_text_in_output()</code> to redraw the screen. If there is no limit to how fast the app runs, we will redraw as fast as the computer will let us, consuming all of the available CPU. To reduce this overhead, we do not need to reduce the number of calls to <code>render_text_in_output()</code>. We only need to not compute anything if there is nothing to render.</p>
+
+<p>To accomplish this, we need to cache the last render to check if there is any new content to display. We want to use a data structure that takes up little space and is fast to compare to do this efficiently.</p>
+
+<p>Logria uses lists for its message buffers, so we can store the start and end indexes where the render occurred. For example, if the <code>stderr</code> list is <code>100</code> items long and the display is <code>20</code> rows high, we render <code>17</code> rows of text. Thus, the start and end would be <code>(83, 100)</code>. A tuple containing two integer indexes works well for storing our previous render position. According to the <a href="https://docs.python.org/3/reference/expressions.html#not-in">documentation</a>:</p>
+
+<blockquote>
+<p>Sequences compare lexicographically using comparison of corresponding elements. The built-in containers typically assume identical objects are equal to themselves. That lets them bypass equality tests for identical objects to improve performance and to maintain their internal invariants.</p>
+</blockquote>
+
+<h3 id="drawing-code">Drawing Code</h3>
+
+<p>To enforce this rule on the rendering logic, only a few lines of code are required. First, we store the render state on the Logria object by declaring it:</p>
+
+<pre><code class="python">self.previous_render: Optional[Tuple[int, int]] = None
+</code></pre>
+
+<p>Second, we need to check this value every call. If it did not change, we do not want to execute the rest of the method. If it has changed, we need to update the state and continue with the function logic.</p>
+
+<pre><code class="python"># Determine the start and end position of the render
+start, end = determine_position(self, messages_pointer)
+if not self.analytics_enabled and self.previous_render == (max(start, 0), end):
+    return  # Early escape
+self.previous_render = (max(start, 0), end)
+</code></pre>
+
+<p>Now, Logria will make heavy render calls only if there is new content to display.</p>
+
+<h2 id="polling-too-fast">Polling Too Fast</h2>
+
+<p>Every loop, Logria checks <a href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue">multiprocessing queues</a> for new messages to render. These checks can be slow as we wait for the <a href="https://chrissardegna.com/blog/multiprocessing-changes-python-3-8/">interpreters to pickle the data back and forth</a>, leading to a lot of wait time. We can reduce the number of calls by implementing a poll rate in the main app loop. This also helps call <code>render_text_in_output()</code> less often.</p>
+
+<h3 id="naive-solution">Naive Solution</h3>
+
+<p>Instead of running the app with a plain <code>while True</code> loop, we can add a delay at the start of each loop to prevent checking the queues too often:</p>
+
+<pre><code class="python">while True:
+    time.sleep(0.01)
+</code></pre>
+
+<p>While this reduces app CPU usage, it means we wait longer to render messages and makes user input feel sluggish as it has to wait to render any input.</p>
+
+<h3 id="smart-solution">Smart Solution</h3>
+
+<p>We only want to render as often as messages come into the queue or when the user wants to input something. We can add this feature by including some new code.</p>
+
+<p>First, we need to set poll rate limits: a minimum and a maximum. We do not want the app to refresh too slowly, but we also do not want the app to consume too many resources.</p>
+
+<pre><code class="python">FASTEST_POLL_RATE: float = 0.0001   # Fast enough for smooth typing, 1000 hz
+SLOWEST_POLL_RATE: float = 0.1  # Poll ten times per second, 10 hz
+</code></pre>
+
+<p>Next, we need to calculate the rate at which we receive messages:</p>
+
+<pre><code class="python">while True:
+    # Update messages from the input stream's queues, track time
+    t_0 = time.perf_counter()
+    new_messages: int = 0
+    for stream in self.streams:
+        # repeat the below logic for stdout
+        while not stream.stdout.empty():
+            message = stream.stdout.get()
+            self.stdout_messages.append(message)
+            new_messages += 1
+    t_1 = time.perf_counter() - t_0
+    time.sleep(max(0, self.poll_rate - t_1))
+    self.handle_smart_poll_rate(t_1, new_messages)
+</code></pre>
+
+<p>This checks the time it takes to read the messages from the queue and subtracts that from the poll rate so we do not delay extra time. It also calls to a new method called <code>handle_smart_poll_rate()</code>.</p>
+
+<pre><code class="python">def handle_smart_poll_rate(self, t_1: float, new_messages: int) -&gt; None:
+    &quot;&quot;&quot;
+    Determine a reasonable poll rate based on the speed of messages received
+    &quot;&quot;&quot;
+    if self.manually_controlled_line:
+        self.poll_rate = constants.FASTEST_POLL_RATE
+    elif self.smart_poll_rate:
+        if not self.loop_time:
+            self.loop_time = time.perf_counter()
+        else:
+            self.loop_time = t_1 - self.loop_time
+            messages_per_second = new_messages / self.loop_time
+            if messages_per_second &gt; 0:
+                # Update poll rate
+                new_poll_rate = \
+                    min(
+                        max(
+                            1 / messages_per_second,
+                            constants.FASTEST_POLL_RATE
+                        ),
+                        constants.SLOWEST_POLL_RATE
+                    )
+                self.update_poll_rate(new_poll_rate)
+</code></pre>
+
+<p>This method ensures a few things. First, it checks if the user is inputting information. If that is the case, it will always use the maximum poll rate to ensure there is no latency<sup><a href="#fn1-8075" id="fnr1-8075" title="see footnote" class="footnote">1</a></sup>.</p>
+
+<p>If the user is not entering commands, the app then determines the optimum poll rate based on the time it took to read the messages and the number of messages found. It converts these data points to a message per second metric, then clamps that value to <code>SLOWEST_POLL_RATE..FASTEST_POLL_RATE</code>. This ensures that we always check the message queues as often as there are new messages, reducing resource usage as much as possible while also ensuring we are rendering when new messages appear.</p>
+
+<p>As the number of messages read changes, so will the poll rate at which we check them.</p>
+
+<h1 id="conclusions">Conclusions</h1>
+
+<p>Using tools built into Python, developers can quickly and easily determine how their programs perform and where they are performing poorly. CLI apps that do more than print text once benefit from making fewer heavy drawing calls. Logria required additional optimization when polling for new data from its worker processes. <code>cprofile</code> provided visibility into what method calls were taking up time and CPU, allowing me to triage the issues and adjust each one.</p>
+
+<p>While there are further optimizations to make, they will happen in the <a href="https://github.com/ReagentX/Logria">Rust edition</a> of Logria.</p>
+
+<hr />
+<center>View as: <a href="Making-Python-CLI-Apps-Faster.pdf">PDF</a>, <a href="Making-Python-CLI-Apps-Faster.txt">Markdown</a> | Discussion: <a href="https://news.ycombinator.com/item?id=26067399">Hacker News</a></center>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn1-8075">
+<p>The caveat of this is that it introduces a “wake up time”, i.e. if the poll rate is close to <code>SLOWEST_POLL_RATE</code> then we might wait up to <code>SLOWEST_POLL_RATE</code> to adjust back to the maximum. This wakeup time is a tradeoff we make for general performance, as user input is rare, but streaming text is common. <a href="#fnr1-8075" title="return to article" class="reversefootnote">&#8617;&#xFE0E;</a></p>
+</li>
+
+</ol>
+</div>
+
+
+<footer>
+<hr />
+<a class="button" id="foot_left" href="https://twitter.com/rxcs">@rxcs</a>
+<a class="button" id="foot_right" href="/blog/privacy">privacy</a>
+</footer>
+</body>
+</html>

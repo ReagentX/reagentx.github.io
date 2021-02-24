@@ -54,7 +54,7 @@
 <p>First, create three variables: <code>Case Cost</code>, <code>Key Cost</code><sup><a href="#fn1-28575" id="fnr1-28575" title="see footnote" class="footnote">1</a></sup>, and <code>Budget</code>. These variables are the only user inputs. </p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/optimizing-case-purchase-prices/img/qc_1.png" alt="" />
+<img src="https://chrissardegna.com/blog/optimizing-case-purchase-prices/img/qc_1.png" alt="" />
 </figure>
 
 <p>All of the math takes place below this. The blue table calculates the cost of opening a given number of cases using the formula <code>=(B8*$B$5)+(B8*$C$5)</code>. This multiplies the case cost by the number of cases and adds it to the cost of buying the same number of keys. Thus, the table calculates the exact cost to open a given number of cases at the given price point. </p>
@@ -84,7 +84,7 @@
 <p>The price calculator allows users to define a quantity, budget, and key price and solves for an efficient price. </p>
 
 <figure>
-<img src="https://chrissardegna.com/blog/posts/optimizing-case-purchase-prices/img/pc_1.png" alt="" />
+<img src="https://chrissardegna.com/blog/optimizing-case-purchase-prices/img/pc_1.png" alt="" />
 </figure>
 
 <p>These formulas are far more straightforward. The first calculation uses <code>=IF((K5+1)*K7&gt;K6,&quot;Costs more than budget!&quot;,(K5+1.01)*K7)</code> to determine the cost of keys to open one more than the desired quantity of cases. If the cost of keys exceeds the given budget it returns an error. </p>

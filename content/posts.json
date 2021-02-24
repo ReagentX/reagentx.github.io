@@ -1,6 +1,11 @@
 [
     
     {
+        "slug": "blog/making-python-cli-apps-faster/",
+        "title": "Making Python CLI Apps Faster",
+        "date": "02/08/21"
+    },
+    {
         "slug": "blog/dynamic-logging-in-python-apps/",
         "title": "Dynamic Logging in Python apps",
         "date": "10/29/20"
